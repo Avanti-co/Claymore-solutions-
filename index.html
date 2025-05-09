@@ -1271,11 +1271,10 @@ function renderComparisonReport(report) {
   const container = document.getElementById("comparisonReport");
   container.innerHTML = `
     <h3>Audit Report for ${report.date}</h3>
-   <p style="font-size: 20px;">The statistics table calculated that you were supposed to receive K${report.netProfit} , you said you received  K${report.receivedCash} the difference is ${report.cashDiff >= 0 ? "+" : ""}K${report.cashDiff}, meaning the percentage of shortage is ${report.cashDiffPercent.toFixed(2)}% of what you were supposed to receive on this day</p>
-      <p style="font-size: 20px;">The total sales for this day were  K${report.netSales},
+  <p>The statistics table calculated that you were supposed to receive K${report.netProfit} , you said you received  K${report.receivedCash} the difference is ${report.cashDiff >= 0 ? "+" : ""}K${report.cashDiff}, meaning the percentage of shortage is set to be at ${report.cashDiffPercent.toFixed(2)}% of what you were supposed to receive on this day</p>
+      <p>The total sales for this day were  K${report.netSales},
      
       K${report.bookSales} was recorded as the total in your books, the difference is ${report.bookDiff >= 0 ? "+" : ""}K${report.bookDiff}, set at ${report.bookDiffPercent.toFixed(2)}% difference in totals, if there is a difference, you have made an error somewhere, either in your books or in the statistics table. check both.</p>
-    
   `;
 }
 
