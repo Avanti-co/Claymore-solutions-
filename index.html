@@ -45,6 +45,7 @@
         border-collapse: collapse;
         margin-bottom: 20px;
         font-size: 14px;
+        font-weight: bold;
     }
 
     table,
@@ -881,12 +882,12 @@ async function loadComparisonReport(date) {
     row.addEventListener("click", handleDoubleTapDelete); // attach double-tap event
 
     row.innerHTML = `
-      <td  class="td" contenteditable="true" oninput="autoSave()" style="font-size: 16px;"> <p style="font-size: 17px;" >${item.item}</p> </td>
-      <td  class="td"contenteditable="true" oninput="autoSave()" style="font-size: 16px;"> <p style="font-size: 17px;"> ${item.opening}</p> </td>
-      <td class="td"style="font-size: 16px;"contenteditable="true" oninput="autoSave()"> <p style="font-size: 17px;">${item.orders} </p></td>
+      <td  class="td" contenteditable="true" oninput="autoSave()" style="font-size: 16px;"> <p style="font-size: 17px; font-weight: bold;" >${item.item}</p> </td>
+      <td  class="td"contenteditable="true" oninput="autoSave()" style="font-size: 16px;"> <p style="font-size: 17px; font-weight: bold;"> ${item.opening}</p> </td>
+      <td class="td"style="font-size: 16px;"contenteditable="true" oninput="autoSave()"> <p style="font-size: 17px;font-weight: bold;" >${item.orders} </p></td>
       <td> ${totalStock} </td>
-      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave()"> <p style="font-size: 17px;">${item.price}</p> </td>
-      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave(true)"><p style="font-size: 17px;"> ${item.closing} </p></td>
+      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave()"> <p style="font-size: 17px; font-weight: bold;">${item.price}</p> </td>
+      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave(true)"><p style="font-size: 17px; font-weight: bold;"> ${item.closing} </p></td>
       <td> ${sales} </td>
       
       <td> ${total.toFixed(2)} </td>
@@ -980,12 +981,12 @@ async function handleDoubleTapDelete(e) {
       <td style=" user-select: none; /* supported in most modern browsers */
   -webkit-user-select: none; /* Safari */
   -moz-user-select: none; /* Firefox */
-  -ms-user-select: none; /* Internet Explorer/Edge */ font-size: 16px;" contenteditable="true" oninput="autoSave()"> <p style="font-size: 17px;">New Item</p></td>
-      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave()"><p style="font-size: 17px;">0</p></td>
-      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave()"><p style="font-size: 17px;">0</p></td>
+  -ms-user-select: none; /* Internet Explorer/Edge */ font-size: 16px;" contenteditable="true" oninput="autoSave()"> <p style="font-size: 17px; font-weight: bold;">New Item</p></td>
+      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave()"><p style="font-size: 17px; font-weight: bold;  ">0</p></td>
+      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave()"><p style="font-size: 17px;  font-weight: bold;">0</p></td>
       <td>0</td>
-      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave()"><p style="font-size: 17px;">0</p></td>
-      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave(true)"><p style="font-size: 17px;">0</p></td>
+      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave()"><p style="font-size: 17px; font-weight: bold; ">0</p></td>
+      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave(true)"><p style="font-size: 17px;  font-weight: bold;">0</p></td>
       <td>0</td>
       
       <td>0.00</td>
