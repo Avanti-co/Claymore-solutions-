@@ -599,7 +599,7 @@ footer {
         }
             @media screen and (-webkit-min-device-pixel-ratio:0) {
   /* Chrome-specific styles */
-  table td {
+  .td {
     font-size: 8px;
   }
 }
@@ -880,8 +880,8 @@ async function loadComparisonReport(date) {
     row.addEventListener("click", handleDoubleTapDelete); // attach double-tap event
 
     row.innerHTML = `
-      <td style="font-size: 16px;" contenteditable="true" oninput="autoSave()"> ${item.item} </td>
-      <td style="font-size: 16px;" contenteditable="true" oninput="autoSave()"> ${item.opening} </td>
+      <td  contenteditable="true" oninput="autoSave()" style="font-size: 16px;"> ${item.item} </td>
+      <td  contenteditable="true" oninput="autoSave()" style="font-size: 16px;"> ${item.opening} </td>
       <td style="font-size: 16px;"contenteditable="true" oninput="autoSave()"> ${item.orders} </td>
       <td> ${totalStock} </td>
       <td style="font-size: 16px;"contenteditable="true" oninput="autoSave(true)"> ${item.closing} </td>
@@ -979,12 +979,12 @@ async function handleDoubleTapDelete(e) {
   -webkit-user-select: none; /* Safari */
   -moz-user-select: none; /* Firefox */
   -ms-user-select: none; /* Internet Explorer/Edge */ font-size: 16px;" contenteditable="true" oninput="autoSave()">New Item</td>
-      <td contenteditable="true" oninput="autoSave()">0</td>
-      <td contenteditable="true" oninput="autoSave()">0</td>
+      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave()">0</td>
+      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave()">0</td>
       <td>0</td>
-      <td contenteditable="true" oninput="autoSave(true)">0</td>
+      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave(true)">0</td>
       <td>0</td>
-      <td contenteditable="true" oninput="autoSave()">0</td>
+      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave()">0</td>
       <td>0.00</td>
     `;
     tableBody.appendChild(row);
