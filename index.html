@@ -670,10 +670,10 @@ width: 100%;
                         <th>Opening Stock</th>
                         <th>Orders</th>
                         <th>Total Stock</th>
-                        <th>Price</th>
+                       
                         <th>Closing Stock</th>
                         <th>Sales</th>
-                        
+                         <th>Price</th>
                         <th>Total</th>
                     </tr>
                 </thead>
@@ -886,9 +886,10 @@ async function loadComparisonReport(date) {
       <td  class="td"contenteditable="true" oninput="autoSave()" style="font-size: 16px;"> <p style="font-size: 17px; font-weight: bold;"> ${item.opening}</p> </td>
       <td class="td"style="font-size: 16px;"contenteditable="true" oninput="autoSave()"> <p style="font-size: 17px;font-weight: bold;" >${item.orders} </p></td>
       <td> ${totalStock} </td>
-      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave()"> <p style="font-size: 17px; font-weight: bold;">${item.price}</p> </td>
+      
       <td style="font-size: 16px;"contenteditable="true" oninput="autoSave(true)"><p style="font-size: 17px; font-weight: bold;"> ${item.closing} </p></td>
       <td> ${sales} </td>
+      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave()"> <p style="font-size: 17px; font-weight: bold;">${item.price}</p> </td>
       
       <td> ${total.toFixed(2)} </td>
     `;
@@ -985,10 +986,10 @@ async function handleDoubleTapDelete(e) {
       <td style="font-size: 16px;"contenteditable="true" oninput="autoSave()"><p style="font-size: 17px; font-weight: bold;  ">0</p></td>
       <td style="font-size: 16px;"contenteditable="true" oninput="autoSave()"><p style="font-size: 17px;  font-weight: bold;">0</p></td>
       <td>0</td>
-      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave()"><p style="font-size: 17px; font-weight: bold; ">0</p></td>
+    
       <td style="font-size: 16px;"contenteditable="true" oninput="autoSave(true)"><p style="font-size: 17px;  font-weight: bold;">0</p></td>
       <td>0</td>
-      
+        <td style="font-size: 16px;"contenteditable="true" oninput="autoSave()"><p style="font-size: 17px; font-weight: bold; ">0</p></td>
       <td>0.00</td>
     `;
     tableBody.appendChild(row);
