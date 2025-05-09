@@ -1280,37 +1280,44 @@ function renderComparisonReport(report) {
 
 window.shareData = function () {
   const date = dateInput.value;
-  let message = `*CLAYMORE SOLUTIONS STATISTICS - ${date}*\n\n`;
+  let message = `*📊 CLAYMORE SOLUTIONS STATISTICS - ${date}*\n\n`;
 
-  // Get financial summaries
+  // Financial Summary
   const netSales = document.getElementById("netSales").innerText;
   const totalIncomes = document.getElementById("totalIncomes").innerText;
   const grossProfit = document.getElementById("grossProfit").innerText;
   const netProfit = document.getElementById("netProfit").innerText;
 
-  message += `*Net Sales:* ${netSales}\n`;
-  message += `*Total Income:* ${totalIncomes}\n`;
-  message += `*Gross Profit:* ${grossProfit}\n`;
-  message += `*Net Profit:* ${netProfit}\n\n`;
+  message += `───────────────\n`;
+  message += `*💼 Financial Summary:*\n`;
+  message += `• Net Sales: K${netSales}\n`;
+  message += `• Total Income: K${totalIncomes}\n`;
+  message += `• Gross Profit: K${grossProfit}\n`;
+  message += `• Net Profit: K${netProfit}\n`;
 
-  // Get comparison report if available
+  // Comparison Report
   const comparisonDiv = document.getElementById("comparisonReport");
   if (comparisonDiv && comparisonDiv.innerText.trim()) {
-    message += `*Comparison Report:*\n${comparisonDiv.innerText.trim()}\n\n`;
+    message += `\n───────────────\n`;
+    message += `*📈 Comparison Report:*\n${comparisonDiv.innerText.trim()}\n`;
   }
 
-  // Get comment if any
+  // Optional Comment
   const comment = document.getElementById("commentInput").value.trim();
   if (comment) {
-    message += `*Comment:* ${comment}\n\n`;
+    message += `\n───────────────\n`;
+    message += `*🗒️ Comment:*\n${comment}\n`;
   }
 
-  // Add items info
-  message += `*Items Summary:*\n`;
+  // Items Summary
+  message += `\n───────────────\n`;
+  message += `*📦 Items Summary:*\n`;
+
   const rows = tableBody.querySelectorAll("tr");
   rows.forEach((row, index) => {
     const cells = row.querySelectorAll("td");
     if (cells.length < 8) return;
+
     const item = cells[0].innerText;
     const opening = cells[1].innerText;
     const orders = cells[2].innerText;
@@ -1319,16 +1326,21 @@ window.shareData = function () {
     const price = cells[6].innerText;
     const total = cells[7].innerText;
 
-    message += `\n${index + 1}. ${item}\n`;
-    message += `  Opening: ${opening}, Orders: ${orders}, Closing: ${closing}\n`;
-    message += `  Sales: ${sales}, Price: K${price}, Total: K${total}`;
+    message += `\n${index + 1}. *${item}*\n`;
+    message += `   • Opening: ${opening}\n`;
+    message += `   • Orders: ${orders}\n`;
+    message += `   • Closing: ${closing}\n`;
+    message += `   • Sales: ${sales}\n`;
+    message += `   • Unit Price: K${price}\n`;
+    message += `   • Total Sales: K${total}`;
   });
 
-  // Encode and share
+  // Send to WhatsApp
   const encodedMessage = encodeURIComponent(message);
   const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
   window.open(whatsappUrl, "_blank");
 };
+
 
 </script>
 
