@@ -3,12 +3,10 @@
 
 <head>
     <meta charset="UTF-8">
-   <meta name="viewport" content="width=device-width, initial-scale=0.45, maximum-scale=0.45, user-scalable=no">
+   <meta name="viewport" content="width=device-width, initial-scale=0.52, maximum-scale=0.52, user-scalable=no">
     <title>Claymore  Online Statistics</title>
   
         <style>
-            
-
     body {
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         background-color: #f5f5f5;
@@ -46,7 +44,7 @@
         width: 100%;
         border-collapse: collapse;
         margin-bottom: 20px;
-        font-size: 16px;
+        font-size: 14px;
     }
 
     table,
@@ -266,7 +264,7 @@
         th,
         td {
             padding: 8px;
-            font-size: 12px;
+            font-size: 16px;
         }
 
         .u {
@@ -599,32 +597,12 @@ footer {
         footer a:hover {
             text-decoration: underline;
         }
-             @media screen and (-webkit-min-device-pixel-ratio:0) {
-    .chrome-td {
-      font-size: 8px;
-    }
-  }
 footer{
 bottom: 0;
 left: 0;
 position: fixed;
 width: 100%;
 }
-            html, body {
-    text-size-adjust: none;
-    -webkit-text-size-adjust: none;
-    font-size: 14px; /* Or your preferred size */
-    font-family: Arial, sans-serif;
-}
-            td, th {
-    font-size: inherit;
-    font-family: inherit;
-}
-
-
-            td{
-                font-size: 1em;}
-            
 </style>
 
 </head>
@@ -682,10 +660,9 @@ width: 100%;
                         <th>Opening Stock</th>
                         <th>Orders</th>
                         <th>Total Stock</th>
-                        <th>Price</th>
                         <th>Closing Stock</th>
                         <th>Sales</th>
-
+                        <th>Price</th>
                         <th>Total</th>
                     </tr>
                 </thead>
@@ -783,7 +760,7 @@ class="total" colspan="6"><strong >TOTAL:</strong></td>
 </div>
 </div>
 
-  <footer style="font-size: 20px;>
+  <footer>
     &copy; 2025 AVANTI ACCOUNTS MANAGER | Designed by <br> Mwelaisha Clement Shaba | Avanti corporation all rights reserved
   </footer>
 <!-- Firebase SDKs -->
@@ -894,14 +871,13 @@ async function loadComparisonReport(date) {
     row.addEventListener("click", handleDoubleTapDelete); // attach double-tap event
 
     row.innerHTML = `
-      <td contenteditable="true" oninput="autoSave()"style=" font-size: 100%;"> ${item.item} </td>
-      <td style=" font-size: 16px;contenteditable="true" oninput="autoSave()"> ${item.opening} </td>
-      <td style=" font-size: 16px;contenteditable="true" oninput="autoSave()"> ${item.orders} </td>
+      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave()"> ${item.item} </td>
+      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave()"> ${item.opening} </td>
+      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave()"> ${item.orders} </td>
       <td> ${totalStock} </td>
-       <td style=" font-size: 16px;contenteditable="true" oninput="autoSave()"> ${item.price} </td>
-      <td style=" font-size: 16px;contenteditable="true" oninput="autoSave(true)"> ${item.closing} </td>
+      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave(true)"> ${item.closing} </td>
       <td> ${sales} </td>
-     
+      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave()"> ${item.price} </td>
       <td> ${total.toFixed(2)} </td>
     `;
     tableBody.appendChild(row);
@@ -993,8 +969,7 @@ async function handleDoubleTapDelete(e) {
       <td style=" user-select: none; /* supported in most modern browsers */
   -webkit-user-select: none; /* Safari */
   -moz-user-select: none; /* Firefox */
-  -ms-user-select: none; /* Internet Explorer/Edge */ 
-  font-size: 16px;" contenteditable="true" oninput="autoSave()">New Item</td>
+  -ms-user-select: none; /* Internet Explorer/Edge */ font-size: 16px;" contenteditable="true" oninput="autoSave()">New Item</td>
       <td contenteditable="true" oninput="autoSave()">0</td>
       <td contenteditable="true" oninput="autoSave()">0</td>
       <td>0</td>
@@ -1271,10 +1246,11 @@ function renderComparisonReport(report) {
   const container = document.getElementById("comparisonReport");
   container.innerHTML = `
     <h3>Audit Report for ${report.date}</h3>
-  <p>The statistics table calculated that you were supposed to receive K${report.netProfit} , you said you received  K${report.receivedCash} the difference is ${report.cashDiff >= 0 ? "+" : ""}K${report.cashDiff}, meaning the percentage of shortage is set to be at ${report.cashDiffPercent.toFixed(2)}% of what you were supposed to receive on this day</p>
+   <p>The statistics table calculated that you were supposed to receive K${report.netProfit} , you said you received  K${report.receivedCash} the difference is ${report.cashDiff >= 0 ? "+" : ""}K${report.cashDiff}, meaning the percentage of shortage is set to be at ${report.cashDiffPercent.toFixed(2)}% of what you were supposed to receive on this day</p>
       <p>The total sales for this day were  K${report.netSales},
      
       K${report.bookSales} was recorded as the total in your books, the difference is ${report.bookDiff >= 0 ? "+" : ""}K${report.bookDiff}, set at ${report.bookDiffPercent.toFixed(2)}% difference in totals, if there is a difference, you have made an error somewhere, either in your books or in the statistics table. check both.</p>
+    </ul>
   `;
 }
 
