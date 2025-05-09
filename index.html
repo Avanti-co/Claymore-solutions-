@@ -264,7 +264,7 @@
         th,
         td {
             padding: 8px;
-            font-size: 16px;
+            font-size: 17px;
         }
 
         .u {
@@ -611,7 +611,7 @@ width: 100%;
 }
 
             table{
-                font-size: 16px;}
+                font-size: 17px;}
 </style>
 
 </head>
@@ -669,9 +669,10 @@ width: 100%;
                         <th>Opening Stock</th>
                         <th>Orders</th>
                         <th>Total Stock</th>
+                        <th>Price</th>
                         <th>Closing Stock</th>
                         <th>Sales</th>
-                        <th>Price</th>
+                        
                         <th>Total</th>
                     </tr>
                 </thead>
@@ -880,13 +881,14 @@ async function loadComparisonReport(date) {
     row.addEventListener("click", handleDoubleTapDelete); // attach double-tap event
 
     row.innerHTML = `
-      <td  class="td" contenteditable="true" oninput="autoSave()" style="font-size: 16px;"> <p style="font-size: 16px;" >${item.item}</p> </td>
-      <td  class="td"contenteditable="true" oninput="autoSave()" style="font-size: 16px;"> <p style="font-size: 16px;"> ${item.opening}</p> </td>
-      <td class="td"style="font-size: 16px;"contenteditable="true" oninput="autoSave()"> <p style="font-size: 16px;">${item.orders} </p></td>
+      <td  class="td" contenteditable="true" oninput="autoSave()" style="font-size: 16px;"> <p style="font-size: 17px;" >${item.item}</p> </td>
+      <td  class="td"contenteditable="true" oninput="autoSave()" style="font-size: 16px;"> <p style="font-size: 17px;"> ${item.opening}</p> </td>
+      <td class="td"style="font-size: 16px;"contenteditable="true" oninput="autoSave()"> <p style="font-size: 17px;">${item.orders} </p></td>
       <td> ${totalStock} </td>
-      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave(true)"><p style="font-size: 16px;"> ${item.closing} </p></td>
+      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave()"> <p style="font-size: 17px;">${item.price}</p> </td>
+      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave(true)"><p style="font-size: 17px;"> ${item.closing} </p></td>
       <td> ${sales} </td>
-      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave()"> <p style="font-size: 16px;">${item.price}</p> </td>
+      
       <td> ${total.toFixed(2)} </td>
     `;
     tableBody.appendChild(row);
@@ -978,13 +980,14 @@ async function handleDoubleTapDelete(e) {
       <td style=" user-select: none; /* supported in most modern browsers */
   -webkit-user-select: none; /* Safari */
   -moz-user-select: none; /* Firefox */
-  -ms-user-select: none; /* Internet Explorer/Edge */ font-size: 16px;" contenteditable="true" oninput="autoSave()"> <p style="font-size: 16px;">New Item</p></td>
-      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave()"><p style="font-size: 16px;">0</p></td>
-      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave()"><p style="font-size: 16px;">0</p></td>
+  -ms-user-select: none; /* Internet Explorer/Edge */ font-size: 16px;" contenteditable="true" oninput="autoSave()"> <p style="font-size: 17px;">New Item</p></td>
+      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave()"><p style="font-size: 17px;">0</p></td>
+      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave()"><p style="font-size: 17px;">0</p></td>
       <td>0</td>
-      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave(true)"><p style="font-size: 16px;">0</p></td>
+      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave()"><p style="font-size: 17px;">0</p></td>
+      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave(true)"><p style="font-size: 17px;">0</p></td>
       <td>0</td>
-      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave()"><p style="font-size: 16px;">0</p></td>
+      
       <td>0.00</td>
     `;
     tableBody.appendChild(row);
