@@ -872,7 +872,7 @@ async function loadComparisonReport(date) {
     row.addEventListener("click", handleDoubleTapDelete); // attach double-tap event
 
     row.innerHTML = `
-      <td style=" font-size: 70em;"contenteditable="true" oninput="autoSave()"> ${item.item} </td>
+      <td style=" font-size: 5em;"contenteditable="true" oninput="autoSave()"> ${item.item} </td>
       <td style=" font-size: 16px;contenteditable="true" oninput="autoSave()"> ${item.opening} </td>
       <td style=" font-size: 16px;contenteditable="true" oninput="autoSave()"> ${item.orders} </td>
       <td> ${totalStock} </td>
