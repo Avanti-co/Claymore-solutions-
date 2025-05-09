@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>About AVANTI ACCOUNTS MANAGER</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f9f9f9;
+      margin: 0;
+      padding: 0;
+      color: #333;
+    }
+
+    header {
+      background-color: rgba(0, 0, 0, 0.9);
+      color: white;
+      padding: 30px 20px;
+      text-align: center;
+      font-size: 1.5em;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 40px auto;
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.05);
+      margin-top: 100px;
+    }
+
+    h2 {
+      color: #007BFF;
+    }
+
+    p {
+      line-height: 1.7;
+      font-size: 16px;
+    }
+
+    .section {
+      margin-bottom: 40px;
+    }
+
+    .contact-info {
+      background: #f1f1f1;
+      padding: 20px;
+      border-left: 5px solid #007BFF;
+      border-radius: 5px;
+    }
+
+    .contact-info p {
+      margin: 10px 0;
+    }
+
+    .footer {
+      text-align: center;
+      color: #999;
+      padding: 20px;
+      font-size: 14px;
+    }
+
+    @media (max-width: 600px) {
+      .container {
+        padding: 20px;
+      }
+    }
+       .menu-btn {
+      font-size: 24px;
+      cursor: pointer;
+      background-color: rgba(0, 0, 0, 0.4);
+      border: none;
+      color: white;
+      left: 1px;
+      width: 10px;
+     position: fixed;
+     top: 25px;
+     z-index: 1002;
+    }
+
+    /* Slide Menu */
+    .side-menu {
+      position: fixed;
+      top: 0;
+      left: -250px;
+      width: 250px;
+      height: 100%;
+      background: #2a2a3e;
+      color: white;
+      padding-top: 60px;
+      transition: 0.3s ease;
+      box-shadow: 2px 0 5px rgba(0,0,0,0.3);
+      z-index: 1001;
+    }
+
+    .side-menu a {
+      display: block;
+      padding: 15px 25px;
+      text-decoration: none;
+      color: #ccc;
+      transition: 0.2s;
+       
+    }
+
+    .side-menu a:hover {
+      background: #3a3a5c;
+      color: white;
+    }
+
+    /* Overlay */
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      opacity: 0;
+      visibility: hidden;
+      transition: 0.3s ease;
+      z-index: 1000;
+    }
+
+    .side-menu.active {
+      left: 0;
+    }
+
+    .overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    @media (max-width: 600px) {
+      .side-menu {
+        width: 200px;
+      }
+    }
+
+  </style>
+</head>
+<body>
+
+<header>
+  AVANTI ACCOUNTS MANAGER
+     <button class="menu-btn" onclick="toggleMenu()">☰</button>
+  </header>
+
+  <div class="side-menu" id="sideMenu">
+    <a href="index.html#con">Home</a>
+    <a href="index.html#comparisonReports">Audits</a>
+ <a href="inven.html">View Inventory</a>
+    <a href="about.html">About</a>
+   
+    <a href="contact.html">Contact</a>
+  </div>
+
+  <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+</header>
+
+<div class="container">
+  <div class="section">
+    <h2>About This Platform</h2>
+    <p>
+      The AVANTI ACCOUNTS MANAGER is a powerful web-based system designed to help businesses manage their inventory, sales, orders, auditing, and financial data all in one place. Built for Claymore Solutions, it provides a sleek, user-friendly interface for capturing stock entries, analyzing income and expenses, viewing audit reports, and maintaining a clear financial overview.
+    </p>
+    <p>
+      Features include real-time data tracking, automatic calculations of profit margins, smart inventory statistics, and secure storage with Firebase. It's an ideal solution for small to medium businesses seeking reliable digital bookkeeping.
+    </p>
+  </div>
+
+  <div class="section">
+    <h2>Who Is It For?</h2>
+    <p>
+      - Shop owners who need to keep track of stock and sales daily.<br>
+      - Accountants who want quick access to audit reports.<br>
+      - Managers who want to view turnover and profit margins at a glance.<br>
+      - Any business needing an organized, cloud-based account manager.
+    </p>
+  </div>
+
+  <div class="section">
+    <h2>Contact & Support</h2>
+    <div class="contact-info">
+      <p><strong>Developer:</strong> Mwelaisha Shaba</p>
+      <p><strong>Email:</strong> mweshaba@icloud.com</p>
+      <p><strong>Phone:</strong> +260 766512632</p>
+      <p><strong>WhatsApp:</strong> +260 766512632</p>
+      <p><strong>Location:</strong> Lusaka, Zambia</p>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  &copy; 2025 Avanti corporation. All rights reserved.
+</div>
+
+
+
+  <script>
+    function toggleMenu() {
+      const menu = document.getElementById('sideMenu');
+      const overlay = document.getElementById('overlay');
+      menu.classList.toggle('active');
+      overlay.classList.toggle('active');
+    }
+  </script>
+
+</body>
+</html>

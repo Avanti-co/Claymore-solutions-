@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Previous Inventory - AVANTI</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f9f9f9;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background: #000;
+      color: #fff;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 30px auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    h1{
+        
+        text-align: center;
+    }
+
+    h2 {
+      margin-top: 0;
+      color: #007BFF;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid #ddd;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f2f2f2;
+    }
+
+    .loading {
+      text-align: center;
+      margin-top: 20px;
+      color: #999;
+    }
+    
+       .menu-btn {
+      font-size: 24px;
+      cursor: pointer;
+      background-color: rgba(0, 0, 0, 0.4);
+      border: none;
+      color: white;
+      left: 10px;
+      width: 50px;
+     position: fixed;
+     top: 10px;
+     z-index: 1002;
+    }
+
+    /* Slide Menu */
+    .side-menu {
+      position: fixed;
+      top: 0;
+      left: -250px;
+      width: 250px;
+      height: 100%;
+      background: #2a2a3e;
+      color: white;
+      padding-top: 60px;
+      transition: 0.3s ease;
+      box-shadow: 2px 0 5px rgba(0,0,0,0.3);
+      z-index: 1001;
+    }
+
+    .side-menu a {
+      display: block;
+      padding: 15px 25px;
+      text-decoration: none;
+      color: #ccc;
+      transition: 0.2s;
+       
+    }
+
+    .side-menu a:hover {
+      background: #3a3a5c;
+      color: white;
+    }
+
+    /* Overlay */
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      opacity: 0;
+      visibility: hidden;
+      transition: 0.3s ease;
+      z-index: 1000;
+    }
+
+    .side-menu.active {
+      left: 0;
+    }
+
+    .overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    @media (max-width: 600px) {
+      .side-menu {
+        width: 200px;
+      }
+    }
+    
+    footer {
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            padding: 20px 0;
+            margin-top: auto;
+        }
+
+        footer p {
+            margin: 0;
+            font-size: 14px;
+        }
+
+        footer a {
+            color: #fff;
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+footer{
+bottom: 0;
+left: 0;
+position: fixed;
+width: 100%;
+}
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>AVANTI ACCOUNTS MANAGER</h1>
+      <button class="menu-btn" onclick="toggleMenu()">☰</button>
+  </header>
+
+  <div class="side-menu" id="sideMenu">
+    <a href="index.html#con">Home</a>
+    <a href="index.html#comparisonReports">Audits</a>
+    <a href="inven.html">View Inventory</a>
+     <a href="about.html">About</a>
+    <a href="contact.html">Contact</a>
+  </div>
+
+  <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+</header>
+
+<div class="container">
+  <h2>📦 View Inventory </h2>
+  <div id="inventoryContent" class="loading">Loading inventory...</div>
+</div>
+
+  <footer>
+    &copy; 2025 AVANTI ACCOUNTS MANAGER | Designed by <br> Mwelaisha Clement Shaba | Avanti corporation all rights reserved
+  </footer>
+
+  <script>
+    function toggleMenu() {
+      const menu = document.getElementById('sideMenu');
+      const overlay = document.getElementById('overlay');
+      menu.classList.toggle('active');
+      overlay.classList.toggle('active');
+    }
+  </script>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyAw7L6TJtF1W0PwfStEJUC4CebUyMdQU9w",
+  authDomain: "users-66be4.firebaseapp.com",
+  databaseURL: "https://users-66be4-default-rtdb.firebaseio.com",
+  projectId: "users-66be4",
+  storageBucket: "users-66be4.firebasestorage.app",
+  messagingSenderId: "776585122050",
+  appId: "1:776585122050:web:3f452a1f16dc36ee1ef21b",
+  measurementId: "G-ZS8W4BBGD5"
+};
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+  const statisticsRef = db.ref('statistics');
+
+  statisticsRef.once('value')
+    .then(snapshot => {
+      const statsData = snapshot.val();
+      const container = document.getElementById('inventoryContent');
+
+      if (!statsData) {
+        container.innerHTML = '<p>No statistics data found.</p>';
+        return;
+      }
+
+      const allDates = Object.keys(statsData).sort((a, b) => new Date(b) - new Date(a));
+
+      if (allDates.length < 2) {
+        container.innerHTML = '<p>Not enough data for previous day.</p>';
+        return;
+      }
+
+      const previousDate = allDates[1];
+      const currentDate= allDates[0];
+      const prevItems = statsData[previousDate];
+
+      let tableHTML = `<p><strong>The last time you balanced your books (${previousDate}) showed you have this in Inventory.</strong></p>`;
+      tableHTML += `
+        <table>
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Quantity</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      Object.values(prevItems).forEach(entry => {
+        const item = entry.item || 'Unnamed';
+        const closing = entry.closing ?? 'N/A';
+        tableHTML += `
+          <tr>
+            <td>${item}</td>
+            <td>${closing}</td>
+          </tr>
+        `;
+      });
+
+      tableHTML += '</tbody></table>';
+      container.innerHTML = tableHTML;
+    })
+    .catch(error => {
+      console.error('Error fetching inventory:', error);
+      document.getElementById('inventoryContent').innerHTML = '<p>Error loading data.</p>';
+    });
+</script>
+
+</body>
+</html>

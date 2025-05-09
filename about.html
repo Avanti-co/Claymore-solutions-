@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>About AVANTI ACCOUNTS MANAGER</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f4f4f9;
+      color: #333;
+    }
+
+    header {
+      background-color: #000;
+      color: white;
+      padding: 40px 20px;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+
+    .container {
+      padding: 40px 20px;
+      max-width: 1000px;
+      margin: auto;
+    }
+
+    h2 {
+      color: #1a1a1a;
+      border-bottom: 2px solid #555;
+      padding-bottom: 5px;
+    }
+
+    .card {
+      background: white;
+      padding: 25px;
+      margin: 20px 0;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    }
+
+    .card h3 {
+      margin-top: 0;
+      color: #007BFF;
+    }
+
+    .card p {
+      line-height: 1.6;
+    }
+
+    footer {
+      text-align: center;
+      padding: 20px;
+      background: #222;
+      color: #ccc;
+      margin-top: 40px;
+    }
+
+    a {
+      color: #007BFF;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    
+     .menu-btn {
+      font-size: 24px;
+      cursor: pointer;
+      background-color: rgba(0, 0, 0, 0.4);
+      border: none;
+      color: white;
+      left: 10px;
+      width: 50px;
+     position: fixed;
+     top: 10px;
+     z-index: 1002;
+    }
+
+    /* Slide Menu */
+    .side-menu {
+      position: fixed;
+      top: 0;
+      left: -250px;
+      width: 250px;
+      height: 100%;
+      background: #2a2a3e;
+      color: white;
+      padding-top: 60px;
+      transition: 0.3s ease;
+      box-shadow: 2px 0 5px rgba(0,0,0,0.3);
+      z-index: 1001;
+    }
+
+    .side-menu a {
+      display: block;
+      padding: 15px 25px;
+      text-decoration: none;
+      color: #ccc;
+      transition: 0.2s;
+       
+    }
+
+    .side-menu a:hover {
+      background: #3a3a5c;
+      color: white;
+    }
+
+    /* Overlay */
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      opacity: 0;
+      visibility: hidden;
+      transition: 0.3s ease;
+      z-index: 1000;
+    }
+
+    .side-menu.active {
+      left: 0;
+    }
+
+    .overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    @media (max-width: 600px) {
+      .side-menu {
+        width: 200px;
+      }
+    }
+
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>AVANTI ACCOUNTS MANAGER</h1>
+    <p>Your Business. Your Numbers. Simplified.</p>
+  </header>
+    <button class="menu-btn" onclick="toggleMenu()">☰</button>
+  </header>
+
+  <div class="side-menu" id="sideMenu">
+    <a href="index.html#con">Home</a>
+    <a href="index.html#comparisonReports">Audits</a>
+ <a href="inven.html">View Inventory</a>
+    <a href="about.html">About</a>
+   
+    <a href="contact.html">Contact</a>
+  </div>
+
+  <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+
+
+  <div class="container">
+    <div class="card">
+      <h2>Overview</h2>
+      <p><strong>AVANTI ACCOUNTS MANAGER</strong> is a modern web-based application designed bespoke and customized for claymore solutions to help manage their inventory, finances, sales, and auditing operations — all in one place.</p>
+    </div>
+
+    <div class="card">
+      <h3>📊 Statistics Section</h3>
+      <p>This section allows users to track key metrics like <strong>Opening Stock</strong>, <strong>Orders</strong>, <strong>Sales</strong>, <strong>Closing Stock</strong>, and <strong>Total Revenue</strong>. It supports date navigation and search functionality for quick access to specific data.</p>
+    </div>
+
+    <div class="card">
+      <h3>💸 Revenue & Liabilities</h3>
+      <p>Manage your business expenses, debts, and liabilities with ease. Add expense categories, record creditor info, and track how much is owed or paid.</p>
+    </div>
+
+    <div class="card">
+      <h3>💰 Income Tracking</h3>
+      <p>Record and categorize different income sources like received payments and other revenue streams to get a clearer view of your earnings.</p>
+    </div>
+
+    <div class="card">
+      <h3>📝 Comments & Notes</h3>
+      <p>Use this section to jot down important observations or daily business notes. This promotes transparency and accountability across business operations.</p>
+    </div>
+
+    <div class="card">
+      <h3>📈 Turnover & Profit Analysis</h3>
+      <p>See a breakdown of total incomes, liabilities, gross/net profit, and other key performance indicators. Perfect for daily or monthly financial review.</p>
+    </div>
+
+    <div class="card">
+      <h3>🔍 Auditing & Reports</h3>
+      <p>Compare physical sales vs recorded sales and generate instant audit reports for internal checks or investor presentations.</p>
+    </div>
+
+    <div class="card">
+      <h3>📤 Share Feature</h3>
+      <p>Send summaries and reports directly via email or export them for external use. Stay connected and share your data securely.</p>
+    </div>
+
+    <div class="card">
+      <h3>🎯 Who Is It For?</h3>
+      <p>This webite has been customized specifically for claymore solutions— AVANTI is your daily tool for staying on top of numbers.</p>
+    </div>
+
+    <div class="card">
+      <h3>🛠 Built With Simplicity</h3>
+      <p>Intuitive UI, clean design, fast performance, and works on desktop or mobile browsers. No login required — just load and go.</p>
+    </div>
+
+    <div class="card">
+      <h3>🔗 Explore the App</h3>
+      <p><a href="index.html">Click here to go back to AVANTI ACCOUNTS MANAGER</a></p>
+    </div>
+  </div>
+
+  <footer>
+    &copy; 2025 AVANTI ACCOUNTS MANAGER | Designed by <br> Mwelaisha Clement Shaba | Avanti corporation all rights reserved
+  </footer>
+
+  <script>
+    function toggleMenu() {
+      const menu = document.getElementById('sideMenu');
+      const overlay = document.getElementById('overlay');
+      menu.classList.toggle('active');
+      overlay.classList.toggle('active');
+    }
+  </script>
+</body>
+</html>
