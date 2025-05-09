@@ -871,13 +871,13 @@ async function loadComparisonReport(date) {
     row.addEventListener("click", handleDoubleTapDelete); // attach double-tap event
 
     row.innerHTML = `
-      <td style="font-size: 12px;" contenteditable="true" oninput="autoSave()"> ${item.item} </td>
-      <td style="font-size: 12px;" contenteditable="true" oninput="autoSave()"> ${item.opening} </td>
-      <td style="font-size: 12px;"contenteditable="true" oninput="autoSave()"> ${item.orders} </td>
+      <td style="font-size: 10px;" contenteditable="true" oninput="autoSave()"> ${item.item} </td>
+      <td style="font-size: 10px;" contenteditable="true" oninput="autoSave()"> ${item.opening} </td>
+      <td style="font-size: 10px;"contenteditable="true" oninput="autoSave()"> ${item.orders} </td>
       <td> ${totalStock} </td>
-      <td style="font-size: 12px;"contenteditable="true" oninput="autoSave(true)"> ${item.closing} </td>
+      <td style="font-size: 10px;"contenteditable="true" oninput="autoSave(true)"> ${item.closing} </td>
       <td> ${sales} </td>
-      <td style="font-size: 12px;"contenteditable="true" oninput="autoSave()"> ${item.price} </td>
+      <td style="font-size: 10px;"contenteditable="true" oninput="autoSave()"> ${item.price} </td>
       <td> ${total.toFixed(2)} </td>
     `;
     tableBody.appendChild(row);
