@@ -880,13 +880,13 @@ async function loadComparisonReport(date) {
     row.addEventListener("click", handleDoubleTapDelete); // attach double-tap event
 
     row.innerHTML = `
-      <td  class="td" contenteditable="true" oninput="autoSave()" style="font-size: 16px;"> <p style="font-size: 16px;" >${item.item}</p> </td>
-      <td  class="td"contenteditable="true" oninput="autoSave()" style="font-size: 16px;"> ${item.opening} </td>
-      <td class="td"style="font-size: 16px;"contenteditable="true" oninput="autoSave()"> ${item.orders} </td>
+      <td  class="td" contenteditable="true" oninput="autoSave()" style="font-size: 16px;"> <a style="font-size: 16px;" >${item.item}</a> </td>
+      <td  class="td"contenteditable="true" oninput="autoSave()" style="font-size: 16px;"> <a style="font-size: 16px;"><a style="font-size: 16px;"> ${item.opening}</a> </td>
+      <td class="td"style="font-size: 16px;"contenteditable="true" oninput="autoSave()"> <a style="font-size: 16px;">${item.orders} </a></td>
       <td> ${totalStock} </td>
-      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave(true)"> ${item.closing} </td>
+      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave(true)"><a style="font-size: 16px;"> ${item.closing} </a></td>
       <td> ${sales} </td>
-      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave()"> ${item.price} </td>
+      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave()"> <a style="font-size: 16px;">${item.price}</a> </td>
       <td> ${total.toFixed(2)} </td>
     `;
     tableBody.appendChild(row);
@@ -978,13 +978,13 @@ async function handleDoubleTapDelete(e) {
       <td style=" user-select: none; /* supported in most modern browsers */
   -webkit-user-select: none; /* Safari */
   -moz-user-select: none; /* Firefox */
-  -ms-user-select: none; /* Internet Explorer/Edge */ font-size: 16px;" contenteditable="true" oninput="autoSave()">New Item</td>
-      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave()">0</td>
-      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave()">0</td>
+  -ms-user-select: none; /* Internet Explorer/Edge */ font-size: 16px;" contenteditable="true" oninput="autoSave()"> <a style="font-size: 16px;">New Item</a></td>
+      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave()"><a style="font-size: 16px;">0</a></td>
+      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave()"><a style="font-size: 16px;">0</a></td>
       <td>0</td>
-      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave(true)">0</td>
+      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave(true)"><a style="font-size: 16px;">0</a></td>
       <td>0</td>
-      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave()">0</td>
+      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave()"><a style="font-size: 16px;">0</a></td>
       <td>0.00</td>
     `;
     tableBody.appendChild(row);
