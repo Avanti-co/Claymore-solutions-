@@ -1283,20 +1283,26 @@ window.shareData = function () {
   let message = `*CLAYMORE SOLUTIONS STATISTICS - ${date}*\n\n`;
 
   // Financial Summary
-  const netSales = document.getElementById("netSales").innerText;
-  const totalIncomes = document.getElementById("totalIncomes").innerText;
-  const grossProfit = document.getElementById("grossProfit").innerText;
-  const netProfit = document.getElementById("netProfit").innerText;
+  const netSales = document.getElementById("netSales").innerText.trim();
+  const totalIncomes = document.getElementById("totalIncomes").innerText.trim();
+  const grossProfit = document.getElementById("grossProfit").innerText.trim();
+  const netProfit = document.getElementById("netProfit").innerText.trim();
 
-  message += `*Net Sales:* K${netSales}\n`;
-  message += `*Total Income:* K${totalIncomes}\n`;
-  message += `*Gross Profit:* K${grossProfit}\n`;
-  message += `*Net Profit:* K${netProfit}\n\n`;
+  message += `*Net Sales:* ${netSales}\n`;
+  message += `*Total Income:* ${totalIncomes}\n`;
+  message += `*Gross Profit:* ${grossProfit}\n`;
+  message += `*Net Profit:* ${netProfit}\n\n`;
 
   // Comparison Report
   const comparisonDiv = document.getElementById("comparisonReport");
   const comparisonText = comparisonDiv?.innerText.trim() || "No comparison report for this date.";
   message += `*Comparison Report:*\n${comparisonText}\n\n`;
+
+  // Optional Comment
+  const comment = document.getElementById("commentInput").value.trim();
+  if (comment) {
+    message += `*Comment:*\n${comment}\n\n`;
+  }
 
   // Items Summary
   message += `*Items Summary:*\n\n`;
@@ -1306,20 +1312,22 @@ window.shareData = function () {
     const cells = row.querySelectorAll("td");
     if (cells.length < 8) return;
 
-    const item = cells[0].innerText;
-    const opening = cells[1].innerText;
-    const orders = cells[2].innerText;
-    const closing = cells[4].innerText;
-    const sales = cells[5].innerText;
-    const price = cells[6].innerText;
-    const total = cells[7].innerText;
+    // Clean each cell to remove extra spaces/newlines
+    const clean = (cell) => cell.textContent.trim().replace(/\s+/g, ' ');
+
+    const item = clean(cells[0]);
+    const opening = clean(cells[1]);
+    const orders = clean(cells[2]);
+    const closing = clean(cells[4]);
+    const sales = clean(cells[5]);
+    const price = clean(cells[6]);
+    const total = clean(cells[7]);
 
     message += `${index + 1}. ${item}\n`;
     message += `  Opening: ${opening}, Orders: ${orders}, Closing: ${closing}\n`;
-    message += `  Sales: ${sales}, Price: K${price}, Total: K${total}\n\n`;
+    message += `  Sales: ${sales}, Price: ${price}, Total: ${total}\n\n`;
   });
 
-  // Encode and share via WhatsApp
   const encodedMessage = encodeURIComponent(message.trim());
   const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
   window.open(whatsappUrl, "_blank");
