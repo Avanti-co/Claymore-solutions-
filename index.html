@@ -1280,7 +1280,7 @@ function renderComparisonReport(report) {
 
 window.shareData = function () {
   const date = dateInput.value;
-  let message = `*📊 CLAYMORE SOLUTIONS STATISTICS - ${date}*\n\n`;
+  let message = `*CLAYMORE SOLUTIONS STATISTICS - ${date}*\n\n`;
 
   // Financial Summary
   const netSales = document.getElementById("netSales").innerText;
@@ -1288,30 +1288,18 @@ window.shareData = function () {
   const grossProfit = document.getElementById("grossProfit").innerText;
   const netProfit = document.getElementById("netProfit").innerText;
 
-  message += `───────────────\n`;
-  message += `*💼 Financial Summary:*\n`;
-  message += `• Net Sales: K${netSales}\n`;
-  message += `• Total Income: K${totalIncomes}\n`;
-  message += `• Gross Profit: K${grossProfit}\n`;
-  message += `• Net Profit: K${netProfit}\n`;
+  message += `*Net Sales:* K${netSales}\n`;
+  message += `*Total Income:* K${totalIncomes}\n`;
+  message += `*Gross Profit:* K${grossProfit}\n`;
+  message += `*Net Profit:* K${netProfit}\n\n`;
 
   // Comparison Report
   const comparisonDiv = document.getElementById("comparisonReport");
-  if (comparisonDiv && comparisonDiv.innerText.trim()) {
-    message += `\n───────────────\n`;
-    message += `*📈 Comparison Report:*\n${comparisonDiv.innerText.trim()}\n`;
-  }
-
-  // Optional Comment
-  const comment = document.getElementById("commentInput").value.trim();
-  if (comment) {
-    message += `\n───────────────\n`;
-    message += `*🗒️ Comment:*\n${comment}\n`;
-  }
+  const comparisonText = comparisonDiv?.innerText.trim() || "No comparison report for this date.";
+  message += `*Comparison Report:*\n${comparisonText}\n\n`;
 
   // Items Summary
-  message += `\n───────────────\n`;
-  message += `*📦 Items Summary:*\n`;
+  message += `*Items Summary:*\n\n`;
 
   const rows = tableBody.querySelectorAll("tr");
   rows.forEach((row, index) => {
@@ -1326,17 +1314,13 @@ window.shareData = function () {
     const price = cells[6].innerText;
     const total = cells[7].innerText;
 
-    message += `\n${index + 1}. *${item}*\n`;
-    message += `   • Opening: ${opening}`;
-    message += `   • Orders: ${orders}`;
-    message += `   • Closing: ${closing}`;
-    message += `   • Sales: ${sales}`;
-    message += `   • Unit Price: K${price}\n`;
-    message += `   • Total Sales: K${total}`;
+    message += `${index + 1}. ${item}\n`;
+    message += `  Opening: ${opening}, Orders: ${orders}, Closing: ${closing}\n`;
+    message += `  Sales: ${sales}, Price: K${price}, Total: K${total}\n\n`;
   });
 
-  // Send to WhatsApp
-  const encodedMessage = encodeURIComponent(message);
+  // Encode and share via WhatsApp
+  const encodedMessage = encodeURIComponent(message.trim());
   const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
   window.open(whatsappUrl, "_blank");
 };
