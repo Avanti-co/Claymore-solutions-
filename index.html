@@ -748,7 +748,7 @@ class="total" colspan="6"><strong >TOTAL:</strong></td>
     <div>Total Revenue Liabilities: <span id="totalRevenueLiabilities">K0.00</span></div>
     <div>Total Incomes: <span id="totalIncomes">K0.00</span></div>
     <div>Net Sales: <span id="netSales">K0.00</span></div>
-    <div>Net Purchases: <span id="netPurchases">K0.00</span></div>
+   
     <div>Gross Profit: <span id="grossProfit">K0.00</span></div>
     <div>Net Profit: <span id="netProfit">K0.00</span></div>
 </div>
@@ -1285,11 +1285,13 @@ window.shareData = function () {
   // Financial Summary
   const netSales = document.getElementById("netSales").innerText.trim();
   const totalIncomes = document.getElementById("totalIncomes").innerText.trim();
+    const totalLiabilites = document.getElementById("totalExpenses").innerText.trim();
   const grossProfit = document.getElementById("grossProfit").innerText.trim();
   const netProfit = document.getElementById("netProfit").innerText.trim();
 
   message += `*Net Sales:* ${netSales}\n`;
   message += `*Total Income:* ${totalIncomes}\n`;
+    message += `*Total liabilities:* ${totalLiabilities}\n`;
   message += `*Gross Profit:* ${grossProfit}\n`;
   message += `*Net Profit:* ${netProfit}\n\n`;
 
