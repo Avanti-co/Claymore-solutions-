@@ -675,7 +675,7 @@ width: 100%;
                         <th>Total</th>
                     </tr>
                 </thead>
-                <tbody style="font-size: 16px;></tbody>
+                <tbody style="font-size: 16px;"></tbody>
                 <tfoot>
 
                     <tr>
@@ -880,9 +880,9 @@ async function loadComparisonReport(date) {
     row.addEventListener("click", handleDoubleTapDelete); // attach double-tap event
 
     row.innerHTML = `
-      <td  contenteditable="true" oninput="autoSave()" style="font-size: 16px;"> ${item.item} </td>
-      <td  contenteditable="true" oninput="autoSave()" style="font-size: 16px;"> ${item.opening} </td>
-      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave()"> ${item.orders} </td>
+      <td  class="td" contenteditable="true" oninput="autoSave()" style="font-size: 16px;"> ${item.item} </td>
+      <td  class="td"contenteditable="true" oninput="autoSave()" style="font-size: 16px;"> ${item.opening} </td>
+      <td class="td"style="font-size: 16px;"contenteditable="true" oninput="autoSave()"> ${item.orders} </td>
       <td> ${totalStock} </td>
       <td style="font-size: 16px;"contenteditable="true" oninput="autoSave(true)"> ${item.closing} </td>
       <td> ${sales} </td>
