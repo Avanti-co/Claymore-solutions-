@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-   <meta name="viewport" content="width=device-width, initial-scale=0.52, maximum-scale=0.52, user-scalable=no">
+   <meta name="viewport" content="width=device-width, initial-scale=0.45, maximum-scale=0.45, user-scalable=no">
     <title>Claymore  Online Statistics</title>
   
         <style>
@@ -871,8 +871,8 @@ async function loadComparisonReport(date) {
     row.addEventListener("click", handleDoubleTapDelete); // attach double-tap event
 
     row.innerHTML = `
-      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave()"> ${item.item} </td>
-      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave()"> ${item.opening} </td>
+      <td style="font-size: 16px;" contenteditable="true" oninput="autoSave()"> ${item.item} </td>
+      <td style="font-size: 16px;" contenteditable="true" oninput="autoSave()"> ${item.opening} </td>
       <td style="font-size: 16px;"contenteditable="true" oninput="autoSave()"> ${item.orders} </td>
       <td> ${totalStock} </td>
       <td style="font-size: 16px;"contenteditable="true" oninput="autoSave(true)"> ${item.closing} </td>
