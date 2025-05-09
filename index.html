@@ -660,9 +660,10 @@ width: 100%;
                         <th>Opening Stock</th>
                         <th>Orders</th>
                         <th>Total Stock</th>
+                        <th>Price</th>
                         <th>Closing Stock</th>
                         <th>Sales</th>
-                        <th>Price</th>
+
                         <th>Total</th>
                     </tr>
                 </thead>
@@ -875,9 +876,10 @@ async function loadComparisonReport(date) {
       <td contenteditable="true" oninput="autoSave()"> ${item.opening} </td>
       <td contenteditable="true" oninput="autoSave()"> ${item.orders} </td>
       <td> ${totalStock} </td>
+       <td contenteditable="true" oninput="autoSave()"> ${item.price} </td>
       <td contenteditable="true" oninput="autoSave(true)"> ${item.closing} </td>
       <td> ${sales} </td>
-      <td contenteditable="true" oninput="autoSave()"> ${item.price} </td>
+     
       <td> ${total.toFixed(2)} </td>
     `;
     tableBody.appendChild(row);
