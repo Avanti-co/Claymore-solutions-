@@ -676,10 +676,10 @@ width: 100%;
                         <th style="padding: 12px;">Opening Stock</th>
                         <th style="padding: 12px;">Orders</th>
                         <th style="padding: 12px;">Total Stock</th>
-                       
+                       <th style="padding: 12px;">Price</th>
                         <th style="padding: 12px;">Closing Stock</th>
                         <th style="padding: 12px;">Sales</th>
-                         <th style="padding: 12px;">Price</th>
+                         
                         <th style="padding: 12px;">Total</th>
                     </tr>
                 </thead>
@@ -896,10 +896,10 @@ async function loadComparisonReport(date) {
       <td  class="td"contenteditable="true" oninput="autoSave()" style="font-size: 16px;"> <p style="font-size: 17px; font-weight: bold;"> ${item.opening}</p> </td>
       <td class="td"style="font-size: 16px;"contenteditable="true" oninput="autoSave()"> <p style="font-size: 17px;font-weight: bold;" >${item.orders} </p></td>
       <td> ${totalStock} </td>
-      
+      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave()"> <p style="font-size: 17px; font-weight: bold;">${item.price}</p> </td>
       <td style="font-size: 16px;"contenteditable="true" oninput="autoSave(true)"><p style="font-size: 17px; font-weight: bold;"> ${item.closing} </p></td>
       <td> ${sales} </td>
-      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave()"> <p style="font-size: 17px; font-weight: bold;">${item.price}</p> </td>
+      
       
       <td> ${total.toFixed(2)} </td>
     `;
@@ -921,8 +921,8 @@ async function loadComparisonReport(date) {
       const item = cells[0].innerText;
       const opening = parseInt(cells[1].innerText) || 0;
       const orders = parseInt(cells[2].innerText) || 0;
-      const closing = parseInt(cells[4].innerText) || 0;
-      const price = parseFloat(cells[6].innerText) || 0;
+      const closing = parseInt(cells[5].innerText) || 0;
+      const price = parseFloat(cells[4].innerText) || 0;
 
       const totalStock = opening + orders;
       const sales = totalStock - closing;
@@ -930,7 +930,7 @@ async function loadComparisonReport(date) {
       grandTotal += total;
 
       cells[3].innerText = totalStock;
-      cells[5].innerText = sales;
+      cells[6].innerText = sales;
       cells[7].innerText = total.toFixed(2);
 
       newData.push({ item, opening, orders, closing, price });
@@ -996,10 +996,10 @@ async function handleDoubleTapDelete(e) {
       <td style="font-size: 16px;"contenteditable="true" oninput="autoSave()"><p style="font-size: 17px; font-weight: bold;  ">0</p></td>
       <td style="font-size: 16px;"contenteditable="true" oninput="autoSave()"><p style="font-size: 17px;  font-weight: bold;">0</p></td>
       <td>0</td>
-    
+      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave()"><p style="font-size: 17px; font-weight: bold; ">0</p></td>
       <td style="font-size: 16px;"contenteditable="true" oninput="autoSave(true)"><p style="font-size: 17px;  font-weight: bold;">0</p></td>
       <td>0</td>
-        <td style="font-size: 16px;"contenteditable="true" oninput="autoSave()"><p style="font-size: 17px; font-weight: bold; ">0</p></td>
+      
       <td>0.00</td>
     `;
     tableBody.appendChild(row);
