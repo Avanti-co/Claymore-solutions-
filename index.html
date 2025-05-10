@@ -1123,8 +1123,8 @@ function updateTurnover() {
     const cells = row.querySelectorAll("td");
     const opening = parseInt(cells[1]?.innerText) || 0;
     const orders = parseInt(cells[2]?.innerText) || 0;
-    const closing = parseInt(cells[4]?.innerText) || 0;
-    const price = parseFloat(cells[6]?.innerText) || 0;
+    const closing = parseInt(cells[5]?.innerText) || 0;
+    const price = parseFloat(cells[4]?.innerText) || 0;
 
     const totalStock = opening + orders;
     const sales = totalStock - closing;
@@ -1211,8 +1211,8 @@ window.generateComparisonReport = async function () {
     const cells = row.querySelectorAll("td");
     const opening = parseInt(cells[1]?.innerText) || 0;
     const orders = parseInt(cells[2]?.innerText) || 0;
-    const closing = parseInt(cells[4]?.innerText) || 0;
-    const price = parseFloat(cells[6]?.innerText) || 0;
+    const closing = parseInt(cells[5]?.innerText) || 0;
+    const price = parseFloat(cells[4]?.innerText) || 0;
     const sales = (opening + orders - closing);
     const total = sales * price;
     netSales += total;
@@ -1318,9 +1318,9 @@ window.shareData = function () {
     const item = clean(cells[0]);
     const opening = clean(cells[1]);
     const orders = clean(cells[2]);
-    const closing = clean(cells[4]);
-    const sales = clean(cells[5]);
-    const price = clean(cells[6]);
+    const closing = clean(cells[5]);
+    const sales = clean(cells[6]);
+    const price = clean(cells[4]);
     const total = clean(cells[7]);
 
     message += `${index + 1}. ${item}\n`;
