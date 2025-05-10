@@ -723,11 +723,11 @@ class="total" colspan="6"><strong >TOTAL:</strong></td>
 <div class="hi">
             <div class="u" id="creditREC">
                 <h4>Credit payment received</h4>
-                <button onclick="addIncome('credit payment received')">+ Add</button>
+                <button onclick="addIncome('creditPayment')">+ Add</button>
             </div>
             <div class="u" id="other income">
                 <h4>Other income</h4>
-                <button onclick="addIncome('other income')">+ Add</button>
+                <button onclick="addIncome('other')">+ Add</button>
             </div>
            
         </div>
@@ -1068,8 +1068,8 @@ async function handleDoubleTapDelete(e) {
   const sections = [
     { id: "expenses", category: "expenses", type: "liability" },
     { id: "creditors", category: "debtors", type: "liability" },
-    { id: "creditREC", category: "credit payment received", type: "income" },
-    { id: "other income", category: "other income", type: "income" }
+    { id: "creditREC", category: "creditPayment", type: "income" },
+    { id: "other income", category: "other", type: "income" }
   ];
 
   for (const section of sections) {
@@ -1137,20 +1137,20 @@ function updateTurnover() {
 
   // Fetch incomes
   Promise.all([
-  get(ref(db, `incomes/creditPay/${date}`)),
-  get(ref(db, `incomes/IncOther/${date}`)),
+  get(ref(db, `incomes/creditPayment/${date}`)),
+  get(ref(db, `incomes/other/${date}`)),
   get(ref(db, `liabilities/expenses/${date}`)),
   get(ref(db, `liabilities/debtors/${date}`))
-]).then(([creditPaySnap, incOtherSnap, expensesSnap, debtorsSnap]) => {
+]).then(([creditPaymentSnap, otherSnap, expensesSnap, debtorsSnap]) => {
 
-    const creditPay = creditPaySnap.exists() ? creditPaySnap.val() : [];
-    const incOther = incOtherSnap.exists() ? incOtherSnap.val() : [];
+    const creditPayment = creditPaymentSnap.exists() ? creditPaymentSnap.val() : [];
+    const other = otherSnap.exists() ? otherSnap.val() : [];
     const expenses = expensesSnap.exists() ? expensesSnap.val() : [];
     const debtors = debtorsSnap.exists() ?
 debtorsSnap.val() : [];
     
 
-    const totalIncomes = [...creditPay, ...incOther].reduce((sum, entry) => sum + parseFloat(entry.amount || 0), 0);
+    const totalIncomes = [...creditPayment, ...other].reduce((sum, entry) => sum + parseFloat(entry.amount || 0), 0);
     const totalExpenses = [...expenses, ...debtors].reduce((sum, entry) => sum + parseFloat(entry.amount || 0), 0);
 
     const grossProfit = netSales + totalIncomes;
@@ -1219,19 +1219,19 @@ window.generateComparisonReport = async function () {
   });
 
   try {
-    const [creditPaySnap, incOtherSnap, expensesSnap, debtorsSnap] = await Promise.all([
-      get(ref(db, `incomes/creditPay/${date}`)),
-      get(ref(db, `incomes/IncOther/${date}`)),
+    const [creditPaymentSnap, otherSnap, expensesSnap, debtorsSnap] = await Promise.all([
+      get(ref(db, `incomes/creditPayment/${date}`)),
+      get(ref(db, `incomes/other/${date}`)),
       get(ref(db, `liabilities/expenses/${date}`)),
       get(ref(db, `liabilities/debtors/${date}`))
     ]);
 
-    const creditPay = creditPaySnap.exists() ? creditPaySnap.val() : [];
-    const incOther = incOtherSnap.exists() ? incOtherSnap.val() : [];
+    const creditPayment = creditPaymentSnap.exists() ? creditPaymentSnap.val() : [];
+    const other = otherSnap.exists() ? otherSnap.val() : [];
     const expenses = expensesSnap.exists() ? expensesSnap.val() : [];
     const debtors = debtorsSnap.exists() ? debtorsSnap.val() : [];
 
-    const totalIncomes = [...creditPay, ...incOther].reduce((sum, entry) => sum + parseFloat(entry.amount || 0), 0);
+    const totalIncomes = [...creditPayment, ...other].reduce((sum, entry) => sum + parseFloat(entry.amount || 0), 0);
     const totalExpenses = [...expenses, ...debtors].reduce((sum, entry) => sum + parseFloat(entry.amount || 0), 0);
 
     const grossProfit = netSales + totalIncomes;
