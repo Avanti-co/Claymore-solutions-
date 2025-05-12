@@ -938,6 +938,7 @@ async function loadComparisonReport(date) {
       if (triggerTransfer) {
         const nextDate = formatDate(new Date(dateInput.value).getTime() + 86400000);
         transferToNextDay(item, closing, price, nextDate);
+          autosave()
       }
     
 updateTurnover(); // ← ADD this
