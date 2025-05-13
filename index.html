@@ -887,21 +887,20 @@ async function loadComparisonReport(date) {
     const total = sales * item.price;
     grandTotal += total;
 
-    row.setAttribute("data-index", index); // track index
-    row.setAttribute("data-lasttap", "0"); // initialize tap timer
+    row.setAttribute("data-index", index);
+    row.setAttribute("data-lasttap", "0");
+
     row.addEventListener("click", handleDoubleTapDelete); // attach double-tap event
 
     row.innerHTML = `
-      <td  class="td" contenteditable="true" oninput="autoSave()" style="font-size: 16px;"> <p style="font-size: 17px; font-weight: bold;" >${item.item}</p> </td>
-      <td  class="td"contenteditable="true" oninput="autoSave()" style="font-size: 16px;"> <p style="font-size: 17px; font-weight: bold;"> ${item.opening}</p> </td>
-      <td class="td"style="font-size: 16px;"contenteditable="true" oninput="autoSave()"> <p style="font-size: 17px;font-weight: bold;" >${item.orders} </p></td>
-      <td> ${totalStock} </td>
-      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave()"> <p style="font-size: 17px; font-weight: bold;">${item.price}</p> </td>
-      <td style="font-size: 16px;"contenteditable="true" oninput="autoSave(true)"><p style="font-size: 17px; font-weight: bold;"> ${item.closing} </p></td>
-      <td> ${sales} </td>
-      
-      
-      <td> ${total.toFixed(2)} </td>
+      <td contenteditable="true" oninput="autoSave()" style="font-size: 16px;"> <p>${item.item}</p></td>
+      <td contenteditable="true" oninput="autoSave()" style="font-size: 16px;"> <p>${item.opening}</p></td>
+      <td contenteditable="true" oninput="autoSave()" style="font-size: 16px;"> <p>${item.orders}</p></td>
+      <td>${totalStock}</td>
+      <td contenteditable="true" oninput="autoSave()" style="font-size: 16px;"> <p>${item.price}</p></td>
+      <td contenteditable="true" oninput="handleClosingEdit(${index})" style="font-size: 16px;"> <p>${item.closing}</p></td>
+      <td>${sales}</td>
+      <td>${total.toFixed(2)}</td>
     `;
     tableBody.appendChild(row);
   });
@@ -909,6 +908,29 @@ async function loadComparisonReport(date) {
   totalAmountDisplay.innerHTML = `<strong>K${grandTotal.toFixed(2)}</strong>`;
   updateTurnover();
 }
+
+window.handleClosingEdit = async function (index) {
+  const rows = tableBody.querySelectorAll("tr");
+  const row = rows[index];
+  const cells = row.querySelectorAll("td");
+
+  const item = cells[0].innerText.trim();
+  const opening = parseInt(cells[1].innerText) || 0;
+  const orders = parseInt(cells[2].innerText) || 0;
+  const closing = parseInt(cells[5].innerText) || 0;
+  const price = parseFloat(cells[4].innerText) || 0;
+
+  const date = dateInput.value;
+  const nextDate = formatDate(new Date(new Date(date).getTime() + 86400000));
+
+  // Save transfer to next day with flag
+  await transferToNextDay(item, closing, price, nextDate);
+
+  // Update current day's data
+  autoSave();
+
+  console.log(`Transferred ${item} to ${nextDate} with closing: ${closing}`);
+};
 
 
   window.autoSave = function (triggerTransfer = false) {
@@ -938,7 +960,7 @@ async function loadComparisonReport(date) {
       if (triggerTransfer) {
         const nextDate = formatDate(new Date(dateInput.value).getTime() + 86400000);
         transferToNextDay(item, closing, price, nextDate);
-          autosave()
+          
       }
     
 updateTurnover(); // ← ADD this
@@ -974,18 +996,20 @@ async function handleDoubleTapDelete(e) {
 
 
   async function transferToNextDay(item, closingStock, price, nextDate) {
-    const snapshot = await get(ref(db, `statistics/${nextDate}`));
-    const data = snapshot.exists() ? snapshot.val() : [];
+  const snapshot = await get(ref(db, `statistics/${nextDate}`));
+  const data = snapshot.exists() ? snapshot.val() : [];
 
-    const index = data.findIndex((d) => d.item === item);
-    if (index >= 0) {
-      data[index].opening = closingStock;
-    } else {
-      data.push({ item, opening: closingStock, orders: 0, closing: 0, price });
-    }
-
-    set(ref(db, `statistics/${nextDate}`), data);
+  const index = data.findIndex((d) => d.item === item);
+  if (index >= 0) {
+    data[index].opening = closingStock;
+    data[index].transferred = true;
+  } else {
+    data.push({ item, opening: closingStock, orders: 0, closing: 0, price, transferred: true });
   }
+
+  await set(ref(db, `statistics/${nextDate}`), data);
+}
+
 
   window.addItem = function () {
     const row = document.createElement("tr");
