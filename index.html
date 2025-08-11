@@ -777,13 +777,171 @@ class="total" colspan="6"><strong >TOTAL:</strong></td>
 </div>
 </div>
 
-  <footer>
-<div style="text-align: center; color: #999; padding: 20px; font-size: 14px; ">
-  &copy; 2025 Avanti accounts | Developed by <br>
-Mwelaisha Clement Shaba | Avanti corporation. All rights reserved
-</div>
+  <style>
+/* ===== Avanti Footer Styling ===== */
+.avanti-footer {
+  border-top: 2px solid rgba(255,255,255,0.2);
+  margin-top: 200px;
+  background-color: #3f72af;
+  color: #ffffff;
+  font-family: 'Inter', system-ui, sans-serif;
+  padding: 0;
+}
 
-  </footer>
+.avanti-footer-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  height: 45vh; /* Fixed height for the footer area */
+}
+
+.avanti-footer-image-col {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%; /* Fill full height */
+  overflow: hidden;
+}
+
+.avanti-footer-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Makes it fill the space without distortion */
+  display: block;
+}
+
+.avanti-footer-image-col .avanti-footer-cta {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 20px; /* Distance from bottom */
+}
+
+
+.avanti-footer-cta {
+  display: inline-block;
+  padding: 8px 16px; /* Smaller button */
+  background: #1a9ad6;
+  color: #ffffff;
+  font-size: 0.8rem; /* Smaller text */
+  font-weight: 600;
+  border-radius: 5px;
+  text-decoration: none;
+  transition: background 0.3s ease, transform 0.3s ease;
+}
+.avanti-footer-cta:hover {
+  background: #1482b5;
+  transform: scale(1.05);
+}
+
+.avanti-footer-col {
+  padding: 20px 15px; /* Less padding */
+  font-size: 0.8rem; /* Smaller text */
+  overflow: auto;
+}
+
+.avanti-footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.avanti-footer-logo-mark img {
+  width: 38px;
+  height: 38px;
+  border-radius: 15px;
+  background: linear-gradient(135deg, #ffffff, rgba(255,255,255,0.85));
+  box-shadow: 0 4px 12px rgba(2,6,23,0.5);
+  transition: transform 0.6s ease;
+  
+}
+.avanti-footer-logo-mark img:hover {
+  transform: rotate(360deg);
+}
+
+.avanti-footer-brand-name {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.avanti-footer-brand-tag {
+  font-size: 9px;
+  color: #98a7bb;
+  font-weight: 600;
+}
+
+.avanti-footer-text {
+  font-size: 11px;
+  margin-bottom: 10px;
+  color: #f6f8fb;
+}
+
+.avanti-footer-heading {
+  margin-top: 10px;
+  margin-bottom: 6px;
+  font-size: 12px;
+}
+
+.avanti-footer-col p a {
+  color: #ffffff;
+  text-decoration: underline;
+}
+
+.avanti-footer-bottom {
+  text-align: center;
+  font-size: 10px;
+  border-top: 1px solid rgba(255,255,255,0.2);
+  padding: 8px;
+  color: #e0e0e0;
+}
+</style>
+<footer class="avanti-footer">
+  <div class="avanti-footer-bottom">
+    
+  </div>
+  <div class="avanti-footer-container">
+
+    <!-- Column 1: Image & CTA -->
+    <div class="avanti-footer-image-col">
+      <img src="https://ik.imagekit.io/3mtmeexff/hero1.jpeg?updatedAt=1754891444641" alt="Portfolio Preview" class="avanti-footer-image">
+      
+    </div>
+
+    <!-- Column 2: Logo, About, Contact -->
+    <div class="avanti-footer-col">
+      <div class="avanti-footer-brand">
+        <div class="avanti-footer-logo-mark">
+          <img src="https://ik.imagekit.io/3mtmeexff/logo1.jpeg?updatedAt=1754891444300" alt="Avanti Logo">
+        </div>
+        <div>
+          <div class="avanti-footer-brand-name">Avanti</div>
+          <div class="avanti-footer-brand-tag">Design • Develop • Evolve</div>
+        </div>
+      </div>
+      <p class="avanti-footer-text">
+        This web portfolio was developed by Avanti Corporation.  
+        Avanti builds easy-to-use digital tools and websites for individuals and businesses.
+      </p>
+
+      <h3 class="avanti-footer-heading">Get in Touch</h3>
+      <p>Email: <a href="mailto:mweshaba@icloud.com">mweshaba@icloud.com</a></p>
+      <p>Phone: <a href="tel:+260766512632">+260 766512632</a></p>
+
+      <a href="https://avanti-co.github.io/Avanti.com" class="avanti-footer-cta">
+        Get Started
+      </a>
+    </div>
+
+  </div>
+
+  <div class="avanti-footer-bottom">
+    &copy; 2025 Avanti Co. All rights reserved.
+  </div>
+</footer>
+
 <!-- Firebase SDKs -->
 <!-- Include Firebase SDK -->
 <script type="module">
