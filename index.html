@@ -777,15 +777,15 @@ class="total" colspan="6"><strong >TOTAL:</strong></td>
 </div>
 </div>
 
-  <style>
-/* ===== Avanti Footer Styling ===== */
+<style>
 .avanti-footer {
+  padding: 0;
+  margin: 0;
   border-top: 2px solid rgba(255,255,255,0.2);
   margin-top: 200px;
   background-color: #3f72af;
-  color: #ffffff;
+  color: #fff;
   font-family: 'Inter', system-ui, sans-serif;
-  padding: 0;
 }
 
 .avanti-footer-container {
@@ -793,7 +793,9 @@ class="total" colspan="6"><strong >TOTAL:</strong></td>
   margin: 0 auto;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  height: 45vh; /* Fixed height for the footer area */
+  height: 320px;
+  gap: 0;
+  padding: 0;  /* no padding */
 }
 
 .avanti-footer-image-col {
@@ -801,31 +803,36 @@ class="total" colspan="6"><strong >TOTAL:</strong></td>
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100%; /* Fill full height */
+  min-height: 320px;
   overflow: hidden;
+  margin: 0;   /* no margin */
+  padding: 0;  /* no padding */
 }
 
 .avanti-footer-image {
   width: 100%;
   height: 100%;
-  object-fit: cover; /* Makes it fill the space without distortion */
+  object-fit: cover;
   display: block;
+  margin: 0; /* no margin */
+  padding: 0; /* no padding */
+  border-bottom-left-radius: 0; /* ensure no rounding */
 }
+
 
 .avanti-footer-image-col .avanti-footer-cta {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  bottom: 20px; /* Distance from bottom */
+  bottom: 20px;
 }
-
 
 .avanti-footer-cta {
   display: inline-block;
-  padding: 8px 16px; /* Smaller button */
+  padding: 8px 16px;
   background: #1a9ad6;
   color: #ffffff;
-  font-size: 0.8rem; /* Smaller text */
+  font-size: 0.85rem;
   font-weight: 600;
   border-radius: 5px;
   text-decoration: none;
@@ -837,8 +844,8 @@ class="total" colspan="6"><strong >TOTAL:</strong></td>
 }
 
 .avanti-footer-col {
-  padding: 20px 15px; /* Less padding */
-  font-size: 0.8rem; /* Smaller text */
+  padding: 20px 15px;
+  font-size: 0.85rem;
   overflow: auto;
 }
 
@@ -856,7 +863,6 @@ class="total" colspan="6"><strong >TOTAL:</strong></td>
   background: linear-gradient(135deg, #ffffff, rgba(255,255,255,0.85));
   box-shadow: 0 4px 12px rgba(2,6,23,0.5);
   transition: transform 0.6s ease;
-  
 }
 .avanti-footer-logo-mark img:hover {
   transform: rotate(360deg);
@@ -897,24 +903,29 @@ class="total" colspan="6"><strong >TOTAL:</strong></td>
   padding: 8px;
   color: #e0e0e0;
 }
+
+/* Optional: make footer container narrower on small screens */
+@media (max-width: 480px) {
+  .avanti-footer-container {
+    max-width: 100%;
+    padding: 0 10px;
+  }
+}
 </style>
+
 <footer class="avanti-footer">
-  <div class="avanti-footer-bottom">
-    
-  </div>
   <div class="avanti-footer-container">
 
-    <!-- Column 1: Image & CTA -->
+    <!-- Column 1: Image -->
     <div class="avanti-footer-image-col">
       <img src="https://ik.imagekit.io/3mtmeexff/hero1.jpeg?updatedAt=1754891444641" alt="Portfolio Preview" class="avanti-footer-image">
-      
     </div>
 
-    <!-- Column 2: Logo, About, Contact -->
+    <!-- Column 2: Info -->
     <div class="avanti-footer-col">
       <div class="avanti-footer-brand">
         <div class="avanti-footer-logo-mark">
-          <img src="https://ik.imagekit.io/3mtmeexff/logo1.jpeg?updatedAt=1754891444300" alt="Avanti Logo">
+          <img src="https://ik.imagekit.io/3mtmeexff/logo1.jpeg?updatedAt=1754891444300" alt="Avanti Logo" />
         </div>
         <div>
           <div class="avanti-footer-brand-name">Avanti</div>
@@ -934,14 +945,12 @@ class="total" colspan="6"><strong >TOTAL:</strong></td>
         Get Started
       </a>
     </div>
-
   </div>
 
   <div class="avanti-footer-bottom">
     &copy; 2025 Avanti Co. All rights reserved.
   </div>
 </footer>
-
 <!-- Firebase SDKs -->
 <!-- Include Firebase SDK -->
 <script type="module">
