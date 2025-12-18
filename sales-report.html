@@ -1,0 +1,1534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.95, user-scalable=no">
+    <title>Avanti Ledger | Sales</title>
+
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#3f72af">
+
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("/service-worker.js")
+        .then(reg => console.log("Service worker registered:", reg))
+        .catch(err => console.error("Service worker error:", err));
+    });
+  }
+</script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
+                    },
+                    animation: {
+                        'slide-up': 'slideUp 0.3s ease-out forwards',
+                        'fade-in': 'fadeIn 0.2s ease-out forwards',
+                    },
+                    keyframes: {
+                        slideUp: {
+                            '0%': { transform: 'translateY(100%)' },
+                            '100%': { transform: 'translateY(0)' },
+                        },
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        /* Hide scrollbar for IE, Edge and Firefox */
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        
+        body {
+            -webkit-tap-highlight-color: transparent;
+            background-color: #f3f4f6;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useCallback } = React;
+
+        // --- FIREBASE CONFIGURATION AND INITIALIZATION ---
+        
+        // 2. USE PROVIDED CREDENTIALS
+        const firebaseConfig = {
+            apiKey: "AIzaSyAw7L6TJtF1W0PwfStEJUC4CebUyMdQU9w",
+            authDomain: "users-66be4.firebaseapp.com",
+            databaseURL: "https://users-66be4-default-rtdb.firebaseio.com",
+            projectId: "users-66be4",
+            storageBucket: "users-66be4.firebasestorage.app",
+            messagingSenderId: "776585122050",
+            appId: "1:776585122050:web:3f452a1f16dc36ee1ef21b",
+            measurementId: "G-ZS8W4BBGD5"
+        };
+
+        // Initialize Firebase - NECESSARY for the connection to work
+        let firebaseApp;
+        try {
+            firebaseApp = firebase.initializeApp(firebaseConfig);
+        } catch (error) {
+            console.error("Firebase Initialization Error:", error);
+            // Handle case where app is already initialized or config is bad
+        }
+
+        const database = firebaseApp ? firebase.database() : null;
+
+        // --- ICON SYSTEM (Inline SVGs for Zero Dependency) ---
+        const Icon = ({ path, size = 24, className = "" }) => (
+            <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                width={size} 
+                height={size} 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                className={className}
+            >
+                <g dangerouslySetInnerHTML={{ __html: path }} />
+            </svg>
+        );
+
+        const Icons = {
+            TrendingUp: (props) => <Icon path='<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline>' {...props} />,
+            TrendingDown: (props) => <Icon path='<polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline>' {...props} />,
+            DollarSign: (props) => <Icon path='<line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>' {...props} />,
+            ChevronRight: (props) => <Icon path='<polyline points="9 18 15 12 9 6"></polyline>' {...props} />,
+            ChevronLeft: (props) => <Icon path='<polyline points="15 18 9 12 15 6"></polyline>' {...props} />,
+            X: (props) => <Icon path='<line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>' {...props} />,
+            ArrowUpRight: (props) => <Icon path='<line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline>' {...props} />,
+            ArrowDownRight: (props) => <Icon path='<line x1="7" y1="7" x2="17" y2="17"></line><polyline points="17 7 17 17 7 17"></polyline>' {...props} />,
+            Sparkles: (props) => <Icon path='<path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"></path>' {...props} />,
+            AlertCircle: (props) => <Icon path='<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>' {...props} />,
+            ShoppingBag: (props) => <Icon path='<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path>' {...props} />
+        };
+
+        // --- UTILS & DATE FUNCTIONS ---
+        
+        const formatCurrency = (amount) => {
+            // Using 'K' for currency symbol
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD', 
+                minimumFractionDigits: 0,
+            }).format(amount).replace('$', 'K'); 
+        };
+
+        const formatDateKey = (date) => {
+            // Format: YYYY-MM-DD
+            const d = new Date(date);
+            return [
+                d.getFullYear(),
+                String(d.getMonth() + 1).padStart(2, '0'),
+                String(d.getDate()).padStart(2, '0')
+            ].join('-');
+        };
+
+        const getStartOfWeek = (date) => {
+            const d = new Date(date);
+            // 0 = Sunday, 1 = Monday. Move to Monday (day 1)
+            const day = d.getDay();
+            const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust for Sunday
+            return new Date(d.setDate(diff));
+        };
+
+        const getWeekData = (startDate) => {
+            const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+            const start = getStartOfWeek(startDate);
+            const week = [];
+            
+            for (let i = 0; i < 7; i++) {
+                const date = new Date(start);
+                date.setDate(start.getDate() + i);
+                week.push({
+                    day: days[i],
+                    dateKey: formatDateKey(date),
+                    date: date,
+                });
+            }
+            return week;
+        };
+        
+        const getDateRangeString = (weekData) => {
+            if (weekData.length === 0) return "";
+            const start = new Date(weekData[0].date);
+            const end = new Date(weekData[6].date);
+            
+            const startDay = start.getDate();
+            const endDay = end.getDate();
+            const startMonth = start.toLocaleString('default', { month: 'short' });
+            const endMonth = end.toLocaleString('default', { month: 'short' });
+            
+            if (startMonth === endMonth) {
+                 return `${startDay} - ${endDay} ${startMonth}`;
+            } else {
+                 return `${startDay} ${startMonth} - ${endDay} ${endMonth}`;
+            }
+        };
+
+        const getWeekIdentifier = (date) => {
+            const d = new Date(date);
+            const start = getStartOfWeek(d);
+            const end = new Date(start);
+            end.setDate(start.getDate() + 6);
+            
+            const startMonthName = start.toLocaleString('default', { month: 'long' });
+            const endMonthName = end.toLocaleString('default', { month: 'long' });
+
+            if (startMonthName === endMonthName) {
+                return `${startMonthName}, ${start.getFullYear()}`;
+            } else {
+                return `${startMonthName} - ${endMonthName}, ${start.getFullYear()}`;
+            }
+        }
+        
+        // --- REAL FIREBASE DATA FUNCTIONS ---
+        
+        // MOCK LOCAL STORAGE (Since real local storage can't be accessed in this environment, we simulate success with necessary keys)
+        const getLocalStorage = () => {
+             // Simulates retrieving account/user keys from Local Storage
+            return new Promise(resolve => {
+                // IMPORTANT: Replace these static values with actual localStorage.getItem() in a production environment
+                const accountKey = localStorage.getItem('AV_ledger_account_key') || 'sample_account_key'; 
+                const username = localStorage.getItem('AV_ledger_username') || 'sample_user';
+                
+                setTimeout(() => resolve({
+                    accountKey,
+                    username,
+                }), 50);
+            });
+        };
+
+        const getFirebaseRef = async (accountKey, username) => {
+            if (!database) {
+                throw new Error("Firebase not initialized.");
+            }
+            
+            const accountRef = database.ref(`accounts/${accountKey}`);
+
+            // 1. Check Synchronization Setting
+            let syncSnapshot = await accountRef.child('settings/synchronization').once('value');
+            const syncSetting = syncSnapshot.val();
+            
+            let dataPath = '';
+
+            if (syncSetting === 'all') {
+                // Synchronization Check 1 (Global Ledger)
+                // Path: /accounts/[account]/global_ledger/avanti_stats/dates
+                dataPath = `global_ledger/avanti_stats/dates`;
+            } else {
+                // 2. Check Syncing With User
+                let syncUserSnapshot = await accountRef.child(`profiles/${username}/syncingWith`).once('value');
+                const syncingWith = syncUserSnapshot.val();
+                
+                let syncedUser = null;
+                if (syncingWith) {
+                    // Check if any user key has the value 'true'
+                    const syncedUserKey = Object.keys(syncingWith).find(key => syncingWith[key] === true);
+                    if (syncedUserKey) {
+                        syncedUser = syncedUserKey;
+                    }
+                }
+
+                if (syncedUser) {
+                    // Path: /accounts/[account]/profiles/[synced_user]/avanti_stats/dates
+                    dataPath = `profiles/${syncedUser}/avanti_stats/dates`;
+                } else {
+                    // Default Path: /accounts/[account]/profiles/[user]/avanti_stats/dates
+                    dataPath = `profiles/${username}/avanti_stats/dates`;
+                }
+            }
+            
+            const fullPath = `accounts/${accountKey}/${dataPath}`;
+            return { ref: database.ref(fullPath), sourcePath: fullPath };
+        };
+        
+        const fetchFirebaseData = async (accountKey, username, allDateKeys) => {
+            
+            const { ref: basePathRef, sourcePath } = await getFirebaseRef(accountKey, username);
+
+            const fetchedData = {};
+            const itemPromises = [];
+
+            // Fetch data for all required date keys
+            allDateKeys.forEach(dateKey => {
+                 itemPromises.push(
+                    // Fetch all data under the date key
+                    basePathRef.child(dateKey).once('value')
+                        .then(snapshot => {
+                            const data = snapshot.val();
+                            fetchedData[dateKey] = data || {};
+                        })
+                        .catch(err => {
+                            console.warn(`Failed to fetch data for ${dateKey}:`, err);
+                            fetchedData[dateKey] = {};
+                        })
+                );
+            });
+            
+            await Promise.all(itemPromises);
+
+            return { data: fetchedData, source: sourcePath };
+        };
+        
+        // --- DATA PROCESSING HOOK ---
+
+        const useFirebaseData = (weekStartDate) => {
+            const [data, setData] = useState(null);
+            const [isLoading, setIsLoading] = useState(true);
+            const [error, setError] = useState(null);
+            const [sourcePath, setSourcePath] = useState('');
+            
+            const currentWeekData = useMemo(() => getWeekData(weekStartDate), [weekStartDate]);
+            const lastWeekStartDate = useMemo(() => {
+                const d = new Date(weekStartDate);
+                d.setDate(d.getDate() - 7);
+                return d;
+            }, [weekStartDate]);
+            const lastWeekData = useMemo(() => getWeekData(lastWeekStartDate), [lastWeekStartDate]);
+
+            const allDateKeys = useMemo(() => 
+                [...currentWeekData.map(d => d.dateKey), ...lastWeekData.map(d => d.dateKey)]
+            , [currentWeekData, lastWeekData]);
+
+            // Core logic: Calculate sales, revenue, expenses, and incomes
+            const calculateSalesMetrics = useCallback((dailyData) => {
+                let totalSales = 0; // Revenue from goods sold
+                let totalWorkingExpenses = 0;
+                let totalIncome = 0; // Other incomes
+                let dailyProductMetrics = {}; 
+
+                // 1. Calculate Sales and Cost (COGS removed as per request)
+                const items = dailyData.items || {};
+                
+                Object.values(items).forEach(item => {
+                    const salesUnits = (item.opening || 0) + (item.orders || 0) - (item.closing || 0);
+                    
+                    if (salesUnits > 0) {
+                        const revenue = salesUnits * (item.price || 0); 
+                        // Cost is set to 0 as Cost of Goods Sold (COGS) is removed from all reports.
+                        const cost = 0; 
+
+                        totalSales += revenue;
+
+                        dailyProductMetrics[item.id] = {
+                            id: item.id,
+                            name: item.name,
+                            units_sold: salesUnits,
+                            revenue: revenue,
+                            cost: cost, // Now 0
+                        };
+                    }
+                });
+                
+                // 2. Calculate Working Expenses (from 'expenses' data)
+                const expenses = dailyData.expenses || {};
+                Object.values(expenses).forEach(expense => {
+                    // Assuming the amount is directly under the expense object
+                    totalWorkingExpenses += parseFloat(expense.amount || 0);
+                });
+                
+                // 3. Calculate Other Incomes (from 'incomes' data)
+                const incomes = dailyData.incomes || {};
+                 Object.values(incomes).forEach(income => {
+                    // Assuming the amount is directly under the income object
+                    totalIncome += parseFloat(income.amount || 0);
+                });
+                
+                const totalSalesRevenue = totalSales + totalIncome;
+                const netSaleRevenue = totalSalesRevenue - totalWorkingExpenses;
+                
+                return { 
+                    totalSales, 
+                    totalWorkingExpenses, 
+                    totalIncome, 
+                    totalSalesRevenue,
+                    netSaleRevenue,
+                    expenses: Object.values(expenses), // Pass detailed expenses for carousel
+                    dailyProductMetrics: Object.values(dailyProductMetrics) 
+                };
+            }, []);
+
+            useEffect(() => {
+                if (!database) {
+                    setError("Firebase SDK is missing or initialization failed. Cannot connect to database.");
+                    setIsLoading(false);
+                    return;
+                }
+                
+                const fetchData = async () => {
+                    setIsLoading(true);
+                    setError(null);
+                    try {
+                        // 1. Get user keys from local storage
+                        const { accountKey, username } = await getLocalStorage();
+                        if (!accountKey || !username) {
+                            throw new Error("Missing AV_ledger_account_key or AV_ledger_username in local storage.");
+                        }
+
+                        // 2. Fetch all required date data from firebase
+                        const { data: rawData, source } = await fetchFirebaseData(accountKey, username, allDateKeys);
+                        setSourcePath(source);
+
+                        const processedData = {
+                            currentWeek: [],
+                            lastWeek: [],
+                            productMetrics: new Map(), // Use Map to aggregate product metrics across all days
+                            currentWeekTotalSalesRevenue: 0,
+                            lastWeekTotalSalesRevenue: 0,
+                        };
+                        
+                        // Function to aggregate product metrics
+                        const aggregateMetrics = (newMetrics) => {
+                            newMetrics.forEach(item => {
+                                if (processedData.productMetrics.has(item.id)) {
+                                    const existing = processedData.productMetrics.get(item.id);
+                                    existing.units_sold += item.units_sold;
+                                    existing.revenue += item.revenue;
+                                    // existing.cost += item.cost; // COGS removed, no need to aggregate
+                                } else {
+                                    processedData.productMetrics.set(item.id, {...item});
+                                }
+                            });
+                        };
+                        
+                        // Process current week
+                        currentWeekData.forEach(day => {
+                            const dailyData = rawData[day.dateKey] || {};
+                            const { 
+                                totalSales, 
+                                totalWorkingExpenses, 
+                                totalIncome,
+                                totalSalesRevenue,
+                                netSaleRevenue,
+                                expenses,
+                                dailyProductMetrics 
+                            } = calculateSalesMetrics(dailyData);
+                            
+                            processedData.currentWeekTotalSalesRevenue += totalSalesRevenue;
+                            processedData.currentWeek.push({
+                                label: day.day,
+                                value: totalSales, // Daily Sales (revenue from goods)
+                                totalIncome: totalIncome, // Other Income
+                                workingExpenses: totalWorkingExpenses, // Working Expenses
+                                totalSalesRevenue: totalSalesRevenue, // Total Sales + Incomes
+                                netSaleRevenue: netSaleRevenue, // Total Sales Revenue - Working Expenses
+                                expenses: expenses, // Daily expense details
+                                dateKey: day.dateKey,
+                            });
+                            
+                            aggregateMetrics(dailyProductMetrics);
+                        });
+                        
+                        // Process last week
+                        lastWeekData.forEach(day => {
+                            const dailyData = rawData[day.dateKey] || {};
+                            const { totalSalesRevenue } = calculateSalesMetrics(dailyData);
+                            processedData.lastWeekTotalSalesRevenue += totalSalesRevenue;
+                            // Note: We only calculate product metrics for the *current* displayed week
+                        });
+
+                        processedData.productMetrics = Array.from(processedData.productMetrics.values());
+
+                        setData(processedData);
+                        
+                    } catch (err) {
+                        console.error("Data fetching error:", err);
+                        setError("Failed to fetch data: " + err.message);
+                    } finally {
+                        setIsLoading(false);
+                    }
+                };
+
+                fetchData();
+            }, [allDateKeys, calculateSalesMetrics, currentWeekData, lastWeekData]);
+
+            return { 
+                data, 
+                isLoading, 
+                error, 
+                sourcePath, 
+                currentWeek: currentWeekData, 
+                lastWeek: lastWeekData 
+            };
+        };
+
+        // --- UI BLOCKS ---
+        
+        const DoughnutChart = ({ percentage }) => {
+            const radius = 45;
+            const circumference = 2 * Math.PI * radius;
+            const strokeDashoffset = circumference - (percentage / 100) * circumference;
+            
+            return (
+                <div className="relative w-24 h-24 flex items-center justify-center">
+                    <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                        <circle
+                            cx="50"
+                            cy="50"
+                            r={radius}
+                            fill="transparent"
+                            stroke="#e5e7eb" 
+                            strokeWidth="10"
+                        />
+                        <circle
+                            cx="50"
+                            cy="50"
+                            r={radius}
+                            fill="transparent"
+                            stroke="#3b82f6" 
+                            strokeWidth="10"
+                            strokeDasharray={circumference}
+                            strokeDashoffset={strokeDashoffset}
+                            strokeLinecap="round"
+                            className="transition-all duration-700 ease-out"
+                        />
+                    </svg>
+                    <div className="absolute flex flex-col items-center justify-center text-center">
+                        <span className="text-lg font-bold text-gray-900">{percentage}%</span>
+                        <span className="text-xs text-gray-500 leading-none">of sales</span>
+                    </div>
+                </div>
+            );
+        };
+        
+        const MiniBarChart = ({ data, color = "bg-blue-500", monetary = false }) => {
+            const max = Math.max(...data.map(d => d.value));
+            const formatValue = (val) => monetary ? formatCurrency(val) : val.toLocaleString() + ' units';
+            
+             if (max === 0) return <div className="text-center text-gray-400 p-4 h-32 flex items-center justify-center">No data for chart.</div>;
+
+            // Generate scale values: Max, Mid, Min (0)
+            const scaleValues = [max, max / 2, 0].map(v => Math.round(v));
+
+            return (
+                <div className="flex">
+                    {/* Y-Axis Scale */}
+                    <div className="flex flex-col justify-between h-32 text-right pr-2 text-gray-500 text-xs py-2">
+                        {scaleValues.map((val, i) => (
+                            <span key={i} className="leading-none">{monetary ? formatCurrency(val).replace('K', '') : val.toLocaleString()}</span>
+                        ))}
+                    </div>
+                    {/* Bars */}
+                    <div className="flex items-end justify-between h-32 w-full gap-2 pt-4 border-l border-gray-200 pl-2">
+                        {data.map((d, i) => (
+                            <div key={i} className="flex flex-col items-center flex-1 group min-w-[20px]">
+                                <div className="relative w-full flex justify-center h-full items-end">
+                                    <div 
+                                        className={`w-full max-w-[16px] rounded-t-md ${color} transition-all duration-500 ease-out`}
+                                        style={{ 
+                                            height: `${(d.value / max) * 100}%`,
+                                            opacity: d.value > 0 ? '0.8' : '0.1' // Ensure bars show, even if value is 0
+                                        }}
+                                    ></div>
+                                    <div className="absolute top-0 transform -translate-y-full -mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 bg-gray-800 text-white text-xs rounded shadow-lg whitespace-nowrap">
+                                        {formatValue(d.value)}
+                                    </div>
+                                </div>
+                                <span className="text-[10px] text-gray-400 mt-2 font-medium text-center">{d.label.substring(0, 3)}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+        
+      const AreaChartSimple = ({ data, monetary = false }) => {
+    const max = Math.max(...data.map(d => d.value));
+
+    if (max === 0) {
+        return (
+            <div className="text-center text-gray-400 p-4 h-40 flex items-center justify-center">
+                No revenue data for chart.
+            </div>
+        );
+    }
+
+    const formatScale = (val) =>
+        monetary ? formatCurrency(val).replace('K', '') : val.toLocaleString();
+
+    const scaleValues = [1, 0.75, 0.5, 0.25, 0].map(p =>
+        Math.round(max * p)
+    );
+
+    // Generate smooth SVG path
+    const path = data
+        .map((d, i) => {
+            const x = (i / (data.length - 1)) * 100;
+            const y = 100 - (d.value / max) * 100;
+            return `${i === 0 ? "M" : "L"} ${x} ${y}`;
+        })
+        .join(" ");
+
+    return (
+        <div className="flex h-44 w-full">
+            {/* Y Axis */}
+            <div className="flex flex-col justify-between h-full pr-3 text-right text-[11px] text-gray-500 font-medium py-1">
+                {scaleValues.map((val, i) => (
+                    <span key={i}>{formatScale(val)}</span>
+                ))}
+            </div>
+
+            {/* Chart */}
+            <div className="flex-1 relative pl-3">
+                <svg
+                    viewBox="0 0 100 100"
+                    preserveAspectRatio="none"
+                    className="w-full h-full"
+                >
+                    <defs>
+                        <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#2563EB" stopOpacity="0.45" />
+                            <stop offset="70%" stopColor="#2563EB" stopOpacity="0.15" />
+                            <stop offset="100%" stopColor="#2563EB" stopOpacity="0" />
+                        </linearGradient>
+                    </defs>
+
+                    {/* Horizontal grid lines */}
+                    {[0, 25, 50, 75, 100].map((y, i) => (
+                        <line
+                            key={i}
+                            x1="0"
+                            y1={y}
+                            x2="100"
+                            y2={y}
+                            stroke="#E5E7EB"
+                            strokeDasharray="2 2"
+                            strokeWidth="0.5"
+                        />
+                    ))}
+
+                    {/* Area */}
+                    <path
+                        d={`${path} L 100 100 L 0 100 Z`}
+                        fill="url(#areaGradient)"
+                    />
+
+                    {/* Line */}
+                    <path
+                        d={path}
+                        fill="none"
+                        stroke="#2563EB"
+                        strokeWidth="2.2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                    />
+
+                    {/* Points */}
+                    {data.map((d, i) => {
+                        const x = (i / (data.length - 1)) * 100;
+                        const y = 100 - (d.value / max) * 100;
+                        return (
+                            <circle
+                                key={i}
+                                cx={x}
+                                cy={y}
+                                r="1.8"
+                                fill="#2563EB"
+                                stroke="#fff"
+                                strokeWidth="0.6"
+                            />
+                        );
+                    })}
+                </svg>
+
+                {/* X Axis Labels */}
+                <div className="grid grid-cols-[repeat(auto-fit,minmax(0,1fr))] text-[11px] text-gray-500 font-medium mt-2">
+                    {data.map((d, i) => (
+                        <div key={i} className="text-center truncate">
+                            {d.label}
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const BarChartSimple = ({ data, monetary = false }) => {
+    const max = Math.max(...data.map(d => d.value));
+
+    if (max === 0) {
+        return (
+            <div className="text-center text-gray-400 p-4 h-40 flex items-center justify-center">
+                No data available for chart.
+            </div>
+        );
+    }
+
+    const formatValue = (val) =>
+        monetary ? formatCurrency(val) : val.toLocaleString();
+
+    const formatScale = (val) =>
+        monetary ? formatCurrency(val).replace('K', '') : val.toLocaleString();
+
+    const scaleValues = [max, max * 0.75, max * 0.5, max * 0.25, 0].map(v =>
+        Math.round(v)
+    );
+
+    const barWidth = 100 / data.length;
+
+    return (
+        <div className="flex h-40 w-full">
+            {/* Y Axis */}
+            <div className="flex flex-col justify-between h-full text-right pr-2 text-gray-500 text-xs py-1">
+                {scaleValues.map((val, i) => (
+                    <span key={i}>{formatScale(val)}</span>
+                ))}
+            </div>
+
+            {/* Chart */}
+            <div className="flex-1 border-l border-gray-200 pl-2 flex flex-col">
+                {/* Bars */}
+                <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="flex-1 w-full">
+                    {data.map((d, i) => {
+                        const height = (d.value / max) * 100;
+                        const x = i * barWidth + barWidth * 0.15;
+                        const width = barWidth * 0.7;
+                        const y = 100 - height;
+
+                        return (
+                            <g key={i}>
+                                {/* Bar */}
+                                <rect
+                                    x={x}
+                                    y={y}
+                                    width={width}
+                                    height={height}
+                                    rx="1.5"
+                                    fill="#3B82F6"
+                                />
+
+                                {/* Value on bar */}
+                                {height > 0 && (
+                                    <text
+                                        x={x + width / 2}
+                                        y={y + 6}
+                                        textAnchor="middle"
+                                        fontSize="5"
+                                        fontWeight="600"
+                                        fill="#ffffff"
+                                    >
+                                        {formatValue(d.value)}
+                                    </text>
+                                )}
+                            </g>
+                        );
+                    })}
+                </svg>
+
+                {/* X Axis Labels (CLEAN) */}
+                <div className="grid grid-cols-[repeat(auto-fit,minmax(0,1fr))] text-[11px] text-gray-500 font-medium mt-1">
+                    {data.map((d, i) => (
+                        <div key={i} className="text-center truncate">
+                            {d.label}
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+        const Card = ({ children, className = "", onClick }) => (
+            <div 
+                onClick={onClick}
+                className={`bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden ${onClick ? 'active:scale-95 transition-transform cursor-pointer' : ''} ${className}`}
+            >
+                {children}
+            </div>
+        );
+
+        const ListItem = ({ title, value, sub, icon: Icon, color = "bg-blue-100 text-blue-600", onClick, isLast }) => (
+            <div 
+                onClick={onClick}
+                className={`flex items-center justify-between p-4 bg-white ${!isLast ? 'border-b border-gray-100' : ''} active:bg-gray-50 cursor-pointer transition-colors`}
+            >
+                <div className="flex items-center gap-3">
+                    {Icon && (
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${color}`}>
+                            <Icon size={20} />
+                        </div>
+                    )}
+                    <div>
+                        <h4 className="font-semibold text-gray-900 text-sm">{title}</h4>
+                        {sub && <p className="text-xs text-gray-500">{sub}</p>}
+                    </div>
+                </div>
+                <div className="flex items-center gap-2">
+                    <span className="text-gray-900 font-medium text-sm">{value}</span>
+                    <Icons.ChevronRight size={16} className="text-gray-300" />
+                </div>
+            </div>
+        );
+
+        const ReportModal = ({ isOpen, onClose, title, children }) => {
+            if (!isOpen) return null;
+            return (
+                <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center p-0 sm:p-4 animate-fade-in">
+                    <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
+                    <div className="relative w-full max-w-lg h-[95vh] sm:h-[85vh] bg-gray-50 rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col transform transition-transform duration-300 ease-out animate-slide-up">
+                        
+                        <div className="w-full bg-[#3f72af] pt-3 pb-2 flex justify-center shrink-0" onClick={onClose}>
+                            <div className="w-12 h-1.5 bg-gray-200 rounded-full" />
+                        </div>
+
+                        <div className="bg-[#3f72af] px-6 pb-4 border-b border-gray-100 flex justify-between items-center shrink-0 mt-[-1px]">
+                            <h2 className="text-xl font-bold text-white">{title}</h2>
+                            <button onClick={onClose} className="p-2 bg-[#3f72af] rounded-full hover:bg-gray-200">
+                                <Icons.X size={20} className="text-white" />
+                            </button>
+                        </div>
+                        
+                        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                            {children}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+        
+        const WeekNavigator = ({ weekData, onNavigate }) => {
+            const dateRange = getDateRangeString(weekData);
+            const weekIdentifier = getWeekIdentifier(weekData[0].date);
+            
+            return (
+                <div className="flex justify-between items-center p-3 sticky top-0 z-10
+                bg-[#366497] backdrop-blur-md border-b border-white/20">
+    
+    {/* Previous */}
+    <button
+        onClick={() => onNavigate(-7)}
+        className="p-2 rounded-full text-white
+                   hover:bg-white/10 active:bg-white/20
+                   transition-colors
+                   focus:outline-none focus:ring-2 focus:ring-blue-300"
+    >
+        <Icons.ChevronLeft size={20} />
+    </button>
+
+    {/* Center */}
+    <span className="text-center flex flex-col mx-2">
+        <span className="text-sm font-semibold text-gray-100 leading-tight">
+            {weekIdentifier}
+        </span>
+        <span className="text-xs text-blue-300 font-medium tracking-wide mt-0.5">
+            {dateRange}
+        </span>
+    </span>
+
+    {/* Next */}
+    <button
+        onClick={() => onNavigate(7)}
+        className="p-2 rounded-full text-white
+                   hover:bg-white/10 active:bg-white/20
+                   transition-colors
+                   focus:outline-none focus:ring-2 focus:ring-blue-300"
+    >
+        <Icons.ChevronRight size={20} />
+    </button>
+</div>
+            );
+        };
+
+        const ProductPerformanceSummaryCard = ({ productMetrics }) => {
+            const totalRevenue = productMetrics.reduce((sum, item) => sum + item.revenue, 0);
+            const bestSeller = productMetrics.sort((a, b) => b.revenue - a.revenue)[0];
+            
+            if (!bestSeller || totalRevenue === 0) {
+                return <Card className="p-5 text-center text-gray-500">No product sales data this week.</Card>;
+            }
+
+            const percentage = Math.round((bestSeller.revenue / totalRevenue) * 100);
+            
+            return (
+                <Card className="p-5 flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                        <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-2">PRODUCT PERFORMANCE SUMMARY</h3>
+                        <p className="text-xs text-gray-500 font-semibold mb-1">BEST SELLER (BY REVENUE)</p>
+                        <h4 className="font-bold text-xl text-blue-600 truncate">{bestSeller.name}</h4>
+                        <p className="text-xs text-gray-500 mt-1">
+                            {bestSeller.units_sold.toLocaleString()} units sold at {formatCurrency(bestSeller.revenue)}
+                        </p>
+                    </div>
+                    <DoughnutChart percentage={percentage} />
+                </Card>
+            );
+        };
+
+        const WeeklySoldUnitsBarChart = ({ productMetrics }) => {
+            const top5ByUnits = useMemo(() => {
+                return [...productMetrics]
+                    .sort((a, b) => b.units_sold - a.units_sold)
+                    .slice(0, 5)
+                    .map(item => ({
+                        label: item.name,
+                        value: item.units_sold
+                    }));
+            }, [productMetrics]);
+            
+            if (top5ByUnits.length === 0) {
+                 return <Card className="p-5 text-center text-gray-500">No unit sales data available.</Card>;
+            }
+
+            return (
+                <Card className="p-5">
+                    <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-2">MOST SOLD ITEMS (TOP 5)</h3>
+                    <p className="text-xs text-gray-500 mb-4">Quantity of units sold (Scale in units).</p>
+                    <BarChartSimple data={top5ByUnits} color="bg-emerald-500" monetary={false} />
+                </Card>
+            );
+        };
+        
+        const ProfitabilityRankingList = ({ productMetrics }) => {
+            const top10 = useMemo(() => {
+                return [...productMetrics]
+                    .filter(item => item.revenue > 0)
+                    .sort((a, b) => b.revenue - a.revenue)
+                    .slice(0, 10);
+            }, [productMetrics]);
+            
+            if (top10.length === 0) return null;
+
+            return (
+                <Card className="overflow-hidden">
+                    <div className="p-4 bg-gray-50 border-b border-gray-100">
+                        <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">BEST SELLERS (TOP 10)</h3>
+                    </div>
+                    {top10.map((item, i) => (
+                        <a href="inventory.html" key={item.id} className={`flex justify-between items-center p-4 bg-white active:bg-gray-50 transition-colors ${i < top10.length - 1 ? 'border-b border-gray-100' : ''}`}>
+                            <div className="flex items-center gap-3">
+                                <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 font-bold flex items-center justify-center text-xs shrink-0">
+                                    {i + 1}
+                                </div>
+                                <div className="flex flex-col">
+                                    <h4 className="font-semibold text-gray-900 text-sm truncate">{item.name}</h4>
+                                    <p className="text-xs text-blue-500 mt-0.5 font-medium">Ranked # {i + 1}</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3 shrink-0">
+                                <div className="text-right">
+                                    <span className="text-gray-900 font-bold text-sm leading-none">{formatCurrency(item.revenue)}</span>
+                                    <p className="text-xs text-gray-500 leading-none">{item.units_sold.toLocaleString()} units</p>
+                                </div>
+                                <Icons.ChevronRight size={18} className="text-gray-300 shrink-0" />
+                            </div>
+                        </a>
+                    ))}
+                </Card>
+            );
+        };
+        
+        const ReportContent = ({ reportId, data, isLoading, weekData, onNavigate, error, sourcePath }) => {
+            
+            if (error) {
+                 return (
+                    <div className="p-6 text-center text-red-700 bg-red-50 rounded-xl">
+                        <Icons.AlertCircle size={24} className="mx-auto mb-2" />
+                        <p className="font-bold mb-1">Data Error</p>
+                        <p className="text-sm">Could not fetch data from Firebase.</p>
+                        <p className="text-xs mt-2 text-red-500 break-all">{error}</p>
+                    </div>
+                );
+            }
+            if (isLoading) {
+                return <div className="p-10 text-center text-gray-500">Loading Report Data...</div>;
+            }
+            if (!data) {
+                return <div className="p-10 text-center text-gray-500">No data available for this report.</div>;
+            }
+
+            const salesData = data.currentWeek; 
+            const productMetrics = data.productMetrics;
+
+            // P&L Metrics Calculation (Total Sales Revenue, Expenses, Net Sale Revenue)
+            const totalSales = salesData.reduce((s, d) => s + d.value, 0); // Revenue from goods sold
+            const totalWorkingExpenses = salesData.reduce((s, d) => s + d.workingExpenses, 0);
+            const totalIncomes = salesData.reduce((s, d) => s + d.totalIncome, 0);
+            const weeklyTotalSalesRevenue = salesData.reduce((s, d) => s + d.totalSalesRevenue, 0); // Sales + Incomes
+            const weeklyNetSaleRevenue = salesData.reduce((s, d) => s + d.netSaleRevenue, 0); // Total Sales Revenue - Expenses
+
+            const avgMargin = weeklyTotalSalesRevenue > 0 ? (weeklyNetSaleRevenue / weeklyTotalSalesRevenue) * 100 : 0;
+            
+            const topDay = [...salesData].sort((a, b) => b.totalSalesRevenue - a.totalSalesRevenue)[0] || { label: 'N/A', totalSalesRevenue: 0, netSaleRevenue: 0 };
+            const slowestDay = [...salesData].sort((a, b) => a.totalSalesRevenue - b.totalSalesRevenue)[0] || { label: 'N/A', totalSalesRevenue: 0, netSaleRevenue: 0 };
+            
+            // Flatten all expenses for the carousel
+            const allExpenses = salesData.flatMap(day => day.expenses.map(exp => ({
+                day: day.label, 
+                description: exp.description || 'General Expense', 
+                amount: parseFloat(exp.amount || 0)
+            }))).filter(exp => exp.amount > 0).sort((a,b) => b.amount - a.amount);
+
+
+            switch(reportId) {
+                case 'weekly_sales': 
+                    return (
+                        <div className="space-y-6">
+                            
+                           
+
+                            <Card className="p-6">
+                                <h4 className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-4">Total Sales Revenue Trend (7 Days) - Scale in Kwacha</h4>
+                                <AreaChartSimple 
+                                    data={salesData.map(d => ({ label: d.label, value: d.totalSalesRevenue }))} 
+                                    monetary={true}
+                                />
+                            </Card>
+
+                            <Card className="grid grid-cols-2 gap-4 p-4">
+                                <Card className="p-4 bg-emerald-50 border-none">
+                                    <div className="flex items-center gap-2 mb-2 text-emerald-700">
+                                        <Icons.ArrowUpRight size={18} />
+                                        <span className="font-bold text-xs">HIGHEST SALES</span>
+                                    </div>
+                                    <p className="text-lg font-bold text-gray-900">{topDay.label}</p>
+                                    <p className="text-xs text-gray-500">{formatCurrency(topDay.totalSalesRevenue)} Total Sales Revenue</p>
+                                </Card>
+                                <Card className="p-4 bg-orange-50 border-none">
+                                    <div className="flex items-center gap-2 mb-2 text-orange-700">
+                                        <Icons.ArrowDownRight size={18} />
+                                        <span className="font-bold text-xs">LOWEST SALES</span>
+                                    </div>
+                                    <p className="text-lg font-bold text-gray-900">{slowestDay.label}</p>
+                                    <p className="text-xs text-gray-500">{formatCurrency(slowestDay.totalSalesRevenue)} Total Sales Revenue</p>
+                                </Card>
+                            </Card>
+
+                            <Card className="overflow-hidden">
+                                <div className="bg-gray-50 px-4 py-2 border-b border-gray-100 text-xs font-bold text-gray-500 uppercase">Daily Breakdown</div>
+                                {salesData.map((day, i) => (
+                                    <div key={i} className="flex justify-between items-center p-3 border-b border-gray-50 last:border-0">
+                                        <span className="text-sm font-medium">{day.label}</span>
+                                        <div className="flex flex-col items-end">
+                                            <span className="text-sm font-bold">{formatCurrency(day.totalSalesRevenue)}</span> 
+                                            <span className="text-[10px] text-gray-400">
+                                                - {formatCurrency(day.workingExpenses)} Expenses
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </Card>
+                        </div>
+                    );
+
+                case 'product_performance': 
+                    return (
+                        <div className="space-y-6">
+                           
+                            <ProductPerformanceSummaryCard productMetrics={productMetrics} />
+                            
+                            <WeeklySoldUnitsBarChart productMetrics={productMetrics} />
+
+                            <ProfitabilityRankingList productMetrics={productMetrics} />
+
+                        </div>
+                    );
+
+                case 'weekly_pnl': 
+                    return (
+                     <div className="space-y-6">
+                        
+                     
+
+                        <Card className="p-6">
+                            <h3 className="text-lg font-bold text-gray-900 mb-1">Weekly Revenue Generation</h3>
+                            <p className="text-gray-500 text-sm mb-4">Analysis for the last 7 days</p>
+
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <p className="text-gray-500 text-xs">Net Sale Revenue</p>
+                                    <p className="text-2xl font-bold text-gray-900">{formatCurrency(weeklyNetSaleRevenue)}</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-gray-500 text-xs">Avg Margin</p>
+                                    <span className={`px-3 py-1 rounded-full text-sm font-bold ${avgMargin >= 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                                        {avgMargin.toFixed(1)}%
+                                    </span>
+                                </div>
+                            </div>
+                        </Card>
+                        
+                        {/* FIX: Income trend chart is for monetary value (Net Sale Revenue) */}
+                        <Card className="p-6">
+                            <h4 className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-4">
+                                NET SALE REVENUE TREND (7 DAYS) - Scale in Kwacha
+                            </h4>
+                            <AreaChartSimple
+                                data={salesData.map(d => ({
+                                    label: d.label,
+                                    value: d.netSaleRevenue
+                                }))}
+                                color="bg-blue-500" 
+                                monetary={true}
+                            />
+                        </Card>
+                        
+                        {/* P&L BREAKDOWN (Total Sales, Expenses, Net Sale Revenue) */}
+                        <Card className="overflow-hidden">
+                            <div className="p-4 bg-gray-50 border-b border-gray-100">
+                                <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">PROFIT & LOSS BREAKDOWN SUMMARY</h3>
+                            </div>
+                            <div className="p-4 space-y-3">
+                                <div className="flex justify-between items-center text-sm">
+                                    <p className="font-medium text-gray-700">Total Sales (Goods Revenue)</p>
+                                    <span className="font-bold text-gray-900">{formatCurrency(totalSales)}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-sm">
+                                    <p className="font-medium text-gray-700">Total Other Incomes</p>
+                                    <span className="font-bold text-hrey-600">{formatCurrency(totalIncomes)}</span>
+                                </div>
+                                
+                                <hr className="border-t border-gray-200" />
+                                
+                                <div className="flex justify-between items-center text-sm">
+                                    <p className="font-bold text-gray-900">Total Sales Revenue </p>
+                                    <span className="font-black text-gray-900">{formatCurrency(weeklyTotalSalesRevenue)}</span>
+                                </div>
+
+                                <hr className="border-t border-gray-200" />
+                                
+                                <div className="flex justify-between items-center text-sm">
+                                    <p className="font-medium text-gray-700">Total Working Expenses </p>
+                                    <span className="font-bold text-grey-500">({formatCurrency(totalWorkingExpenses)})</span>
+                                </div>
+                                
+                                <hr className="border-t border-gray-200" />
+
+                                <div className="flex justify-between items-center text-lg pt-1">
+                                    <p className="font-bold text-gray-900">Net Sale Revenue </p>
+                                    <span className="font-black text-gray-900">{formatCurrency(weeklyNetSaleRevenue)}</span>
+                                </div>
+                            </div>
+                        </Card>
+                        
+                        {/* MARGIN BREAKDOWN - iOS Card List */}
+                        <Card className="overflow-hidden">
+                            <div className="p-4 bg-gray-50 border-b border-gray-100">
+                                <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">DAILY MARGIN BREAKDOWN</h3>
+                            </div>
+                            {salesData.map((day, i) => (
+                                <div key={i} className={`flex flex-col p-4 bg-white ${i < salesData.length - 1 ? 'border-b border-gray-100' : ''}`}>
+                                    <h4 className="font-semibold text-gray-900 text-sm mb-1">{day.label} ({day.dateKey})</h4>
+                                    <div className="grid grid-cols-2 gap-2 text-xs">
+                                        <p className="text-gray-500">Sales + Income</p>
+                                        <p className="text-right font-medium text-gray-800">{formatCurrency(day.totalSalesRevenue)}</p>
+                                        
+                                        <p className="text-gray-500">less: Working Expenses</p>
+                                        <p className="text-right font-medium text-red-600">({formatCurrency(day.workingExpenses)})</p>
+                                        
+                                        <p className="font-bold text-gray-700">= Sales Revenue</p>
+                                        <p className="text-right font-black text-blue-600">{formatCurrency(day.netSaleRevenue)}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </Card>
+
+                        {/* EXPENSES CAROUSEL */}
+                        {allExpenses.length > 0 && (
+                            <div className="pt-2">
+                                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1 mb-3">WEEKLY EXPENSES</h3>
+                                <div className="flex overflow-x-auto no-scrollbar space-x-3 pb-2">
+                                    {allExpenses.map((exp, i) => (
+                                        <Card
+  key={i}
+  className="
+    flex-none w-64 p-4
+    rounded-2xl
+    bg-[#F9F9FB]
+    border border-[#E5E5EA]
+    shadow-[0_4px_12px_rgba(0,0,0,0.06)]
+    transition-transform active:scale-[0.98]
+  "
+>
+  <div className="flex items-center justify-between mb-2">
+    <span className="text-[11px] font-medium text-[#8E8E93]">
+      {exp.day}
+    </span>
+  </div>
+
+  <p className="text-[22px] font-semibold text-[#1C1C1E] mb-1 truncate">
+    {formatCurrency(exp.amount)}
+  </p>
+
+  <p className="text-[13px] text-[#636366] leading-snug line-clamp-2">
+    {exp.description || 'No Description'}
+  </p>
+</Card>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        
+                    </div>
+                    );
+
+                default:
+                    return <div className="p-10 text-center text-gray-400">Select a Sales Report to view its details.</div>;
+            }
+        };
+
+
+        // --- MAIN APPLICATION (Sales Default) ---
+
+        function AvantiLedger() {
+            const [selectedCategory, setSelectedCategory] = useState('Sales'); 
+            const [modalOpen, setModalOpen] = useState(false);
+            const [currentReport, setCurrentReport] = useState(null);
+            
+            const [currentWeekStartDate, setCurrentWeekStartDate] = useState(() => getStartOfWeek(new Date()));
+            
+            const { data, isLoading, error, currentWeek, lastWeek, sourcePath } = useFirebaseData(currentWeekStartDate);
+            
+            const handleWeekNavigation = useCallback((days) => {
+                setCurrentWeekStartDate(prevDate => {
+                    const newDate = new Date(prevDate);
+                    newDate.setDate(prevDate.getDate() + days);
+                    return newDate;
+                });
+            }, []);
+            
+            const categories = useMemo(() => ({
+                'Accounting': [],
+                'Sales': [
+                    { id: 'weekly_sales', title: 'Weekly Sales Report', sub: 'Total Revenue Trends (7 Days)', icon: Icons.TrendingUp, color: "bg-blue-100 text-blue-600" },
+                    { id: 'product_performance', title: 'Product Performance', sub: 'Best & Worst Sellers', icon: Icons.ShoppingBag, color: "bg-emerald-100 text-emerald-600" },
+                    { id: 'weekly_pnl', title: 'Weekly Revenue Generation Report', sub: 'Net Sale Revenue by Day', icon: Icons.DollarSign, color: "bg-orange-100 text-orange-600" },
+                ],
+                'Inventory': [],
+            }), []);
+
+            const openReport = (id, title) => {
+                setCurrentReport({ id, title });
+                setModalOpen(true);
+            };
+
+            const categoryData = categories[selectedCategory];
+            
+            // Logic for "This Week vs Last Week"
+            const comparisonData = useMemo(() => {
+                if (isLoading || error || !data) {
+                    return { revenue: 0, percentageChange: 0, isIncreasing: true };
+                }
+                
+                // Use Total Sales Revenue for comparison
+                const current = data.currentWeekTotalSalesRevenue;
+                const last = data.lastWeekTotalSalesRevenue;
+                
+                let percentageChange = 0;
+                let isIncreasing = true;
+                
+                if (last > 0) {
+                    percentageChange = ((current - last) / last) * 100;
+                    isIncreasing = percentageChange >= 0;
+                } else if (current > 0) {
+                    percentageChange = 100; 
+                }
+                
+                return { 
+                    revenue: current, 
+                    percentageChange: Math.abs(percentageChange), 
+                    isIncreasing 
+                };
+            }, [data, isLoading, error]);
+            
+            // FIX: Percentage calculation is now correct (+percentage vs last week)
+            const comparisonText = isLoading || error || !data 
+                ? 'Loading comparison...' 
+                : `${comparisonData.isIncreasing ? '+' : '-'}${comparisonData.percentageChange.toFixed(1)}% vs last week`;
+
+            const ComparisonIcon = comparisonData.isIncreasing ? Icons.TrendingUp : Icons.TrendingDown;
+            const iconColor = comparisonData.isIncreasing ? 'text-white' : 'text-red-300';
+            const gradientFrom = comparisonData.isIncreasing ? 'from-blue-600' : 'from-red-600';
+            const gradientTo = comparisonData.isIncreasing ? 'to-blue-500' : 'to-red-500';
+            const shadowColor = comparisonData.isIncreasing ? 'shadow-blue-200' : 'shadow-red-200';
+
+            return (
+                <div className="min-h-screen flex justify-center">
+                    <div className="w-full max-w-lg bg-white min-h-screen shadow-2xl relative flex flex-col">
+                        
+                        <div className="sticky top-0 z-30 bg-[#3f72af] backdrop-blur-md border-b border-[#5698d8]">
+    <div className="h-2 w-full"></div>
+    
+    <div className="px-5 py-3">
+        <div className="flex justify-between items-center mb-4">
+            <h1 className="text-2xl font-black tracking-tight text-white"> 
+                <a onClick={() => window.history.back()}>
+
+                    <i class="fas fa-chevron-left"></i> </a>Avanti
+                    <span className="text-blue-300">.ledger</span>
+                
+            </h1>
+            <div className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center border border-white/20">
+                <span className="font-bold text-xs text-blue-300">AV</span>
+            </div>
+        </div>
+
+        <div className="flex p-1 bg-[#2b598b] rounded-lg overflow-x-auto no-scrollbar">
+ <a href="accounting-report.html" className="flex-1 text-center py-1.5 px-3 rounded-md text-xs font-bold transition-all whitespace-nowrap text-gray-300 cursor-not-allowed hover:text-white">
+           
+                Accounting
+            </a>
+            <a className="flex-1 text-center py-1.5 px-3 rounded-md text-xs font-bold transition-all whitespace-nowrap bg-[#3f72af] text-white shadow-lg">
+                Sales
+            </a>
+            <a href="inventory-report.html" className="flex-1 text-center py-1.5 px-3 rounded-md text-xs font-bold transition-all whitespace-nowrap text-gray-300 cursor-not-allowed hover:text-white">
+                Inventory
+            </a>
+        </div>
+    </div>
+    <WeekNavigator weekData={currentWeek} onNavigate={handleWeekNavigation}  />
+</div>
+<nav
+  className="fixed bottom-0 left-0 w-full h-[70px]
+             bg-white/85 backdrop-blur-[20px]
+             border-t border-black/5
+             flex items-center justify-around
+             z-10
+             pb-[env(safe-area-inset-bottom)]
+             font-['Inter',sans-serif]"
+>
+  {/* Home */}
+  <a
+    href="dashboard.html"
+    className="flex flex-col items-center flex-1
+               text-slate-500 transition duration-200 no-underline"
+  >
+    <svg className="w-[22px] h-[22px] fill-none stroke-current stroke-2" viewBox="0 0 24 24">
+      <rect x="3" y="3" width="7" height="7" />
+      <rect x="14" y="3" width="7" height="7" />
+      <rect x="14" y="14" width="7" height="7" />
+      <rect x="3" y="14" width="7" height="7" />
+    </svg>
+    <span className="mt-1 text-[11px] font-medium">Home</span>
+  </a>
+
+  {/* Inventory (inactive) */}
+  <a
+    href="inventory.html"
+    className="flex flex-col items-center flex-1
+               text-slate-500 no-underline"
+  >
+    <svg className="w-[22px] h-[22px] fill-none stroke-current stroke-2" viewBox="0 0 24 24">
+      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+      <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+      <line x1="12" y1="22.08" x2="12" y2="12" />
+    </svg>
+    <span className="mt-1 text-[11px] font-medium">Inventory</span>
+  </a>
+
+  {/* Reports (ACTIVE) */}
+  <a
+    href="#"
+    className="relative flex flex-col items-center flex-1
+               text-[#3f72af] no-underline"
+  >
+    <div
+      className="absolute -top-[14px] w-[20px] h-[3px]
+                 bg-[#3f72af] rounded-b"
+    />
+
+    <svg
+      className="w-[22px] h-[22px]
+                 fill-blue-600/10 stroke-current stroke-2"
+      viewBox="0 0 24 24"
+    >
+      <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+      <polyline points="17 6 23 6 23 12" />
+    </svg>
+    <span className="mt-1 text-[11px] font-semibold">Reports</span>
+  </a>
+
+  {/* Stats */}
+  <a
+    href="statistics.html"
+    className="flex flex-col items-center flex-1
+               text-slate-500 no-underline"
+  >
+    <svg className="w-[22px] h-[22px] fill-none stroke-current stroke-2" viewBox="0 0 24 24">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+      <line x1="16" y1="13" x2="8" y2="13" />
+      <line x1="16" y1="17" x2="8" y2="17" />
+    </svg>
+    <span className="mt-1 text-[11px] font-medium">Stats</span>
+  </a>
+
+  {/* Settings */}
+  <a
+    href="settings.html"
+    className="flex flex-col items-center flex-1
+               text-slate-500 no-underline"
+  >
+    <svg className="w-[22px] h-[22px] fill-none stroke-current stroke-2" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0-.33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0 .33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+    </svg>
+    <span className="mt-1 text-[11px] font-medium">Settings</span>
+  </a>
+</nav>
+
+                        <div className="flex-1 overflow-y-auto pb-24 px-5 pt-4">
+                            
+                            <div className="mb-6 animate-fade-in">
+                                <h2 className="text-3xl font-bold text-gray-900 mb-1">Sales reports</h2>
+                                <p className="text-gray-400 text-sm">
+                                    {categoryData ? `${categoryData.length} reports available` : 'Select a report to begin'}
+                                </p>
+                            </div>
+
+                            <div className="mb-8 animate-fade-in" style={{animationDelay: '0.1s'}}>
+                                <Card className={`p-5 bg-gradient-to-br ${gradientFrom} ${gradientTo} text-white ${shadowColor} shadow-lg`}>
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div>
+                                            <p className="text-blue-100 text-xs font-bold uppercase">Total Sales Revenue ({getDateRangeString(currentWeek)})</p> 
+                                            {isLoading 
+                                                ? <div className="h-8 w-32 bg-white/20 rounded animate-pulse my-1"></div> 
+                                                : <h3 className="text-3xl font-bold">{formatCurrency(comparisonData.revenue)}</h3>
+                                            }
+                                        </div>
+                                        <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
+                                            <ComparisonIcon className={iconColor} size={20}/>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-sm text-blue-50">
+                                        {isLoading 
+                                            ? <div className="h-4 w-24 bg-white/20 rounded animate-pulse"></div> 
+                                            : <span className="bg-white/20 px-2 py-0.5 rounded text-white font-bold">{comparisonText}</span>
+                                        }
+                                    </div>
+                                </Card>
+                            </div>
+
+                            <div className="space-y-4 animate-fade-in" style={{animationDelay: '0.2s'}}>
+                                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Reports</h3>
+                                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                                    {categoryData && categoryData.map((report, index) => (
+                                        <ListItem 
+                                            key={report.id}
+                                            title={report.title}
+                                            sub={report.sub}
+                                            icon={report.icon}
+                                            color={report.color}
+                                            isLast={index === categoryData.length - 1}
+                                            onClick={() => openReport(report.id, report.title)}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                            
+                            <div className="mt-8 p-4 bg-yellow-50 rounded-2xl border border-yellow-100 flex gap-3 items-start animate-fade-in" style={{animationDelay: '0.3s'}}>
+                                <div className="p-2 bg-yellow-100 rounded-full text-yellow-600">
+                                    <Icons.Sparkles size={16} />
+                                </div>
+                                <div>
+  <h4 className="text-sm font-bold text-yellow-800">Pro Tip</h4>
+  <p
+    className="text-xs text-yellow-700 mt-1 transition-opacity duration-300"
+    ref={el => {
+      if (!el) return;
+
+      const tipsMap = {
+        sales: [
+          "Review your '{key}' report every Friday to adjust weekend strategies.",
+          "Compare week-over-week performance to spot demand shifts early.",
+          "Focus on high-volume, low-margin products for pricing improvements."
+        ],
+        inventory: [
+          "Review slow-moving items weekly to reduce holding costs.",
+          "Align reorder levels with recent sales trends.",
+          "Track stock changes after every delivery."
+        ],
+        accounting: [
+          "Balance your trial balance before closing the week.",
+          "Reconcile cash and bank balances weekly.",
+          "Investigate expense spikes immediately."
+        ],
+        default: [
+          "Review your '{key}' report weekly for better decisions.",
+          "Consistent reviews lead to stronger results."
+        ]
+      };
+
+      const category = categoryData?.[0]?.category || "default";
+      const tips = tipsMap[category] || tipsMap.default;
+      let i = 0;
+
+      el.textContent = tips[i].replace(
+        "{key}",
+        categoryData?.[0]?.title || "Key"
+      );
+
+      if (!el._tipInterval) {
+        el._tipInterval = setInterval(() => {
+          i = (i + 1) % tips.length;
+          el.textContent = tips[i].replace(
+            "{key}",
+            categoryData?.[0]?.title || "Key"
+          );
+        }, 15000);
+      }
+    }}
+  />
+</div>
+                            </div>
+
+                        </div>
+
+                        <ReportModal 
+                            isOpen={modalOpen} 
+                            onClose={() => setModalOpen(false)} 
+                            title={currentReport?.title || 'Report'}
+                        >
+                            <ReportContent 
+                                reportId={currentReport?.id} 
+                                data={data} 
+                                isLoading={isLoading}
+                                weekData={currentWeek}
+                                onNavigate={handleWeekNavigation}
+                                error={error}
+                                sourcePath={sourcePath}
+                            />
+                        </ReportModal>
+
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<AvantiLedger />);
+    </script>
+</body>
+</html>

@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=0.95 , maximum-scale=0.95, user-scalable=no" />
+  <title>Edit Profile — iOS Style (Upload + Progress)</title>
+
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+<script src="https://kit.fontawesome.com/419bf59dd3.js" crossorigin="anonymous"></script>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#3f72af">
+
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("/service-worker.js")
+        .then(reg => console.log("Service worker registered:", reg))
+        .catch(err => console.error("Service worker error:", err));
+    });
+  }
+</script>
+
+  <style>
+   :root{
+      --card-bg: rgba(255,255,255,0.9);
+      --muted: #6b7280;
+      --accent: #0ea5a4; /* teal-ish */
+      --glass: rgba(255,255,255,0.6);
+    
+            --system-blue: #007AFF;
+            --system-red: #FF3B30;
+            --bg: #F2F2F7;
+            --card: #FFFFFF;
+            --border-color: #E5E5E5;
+            --text-color: #000000;
+            --muted-color: #8E8E93;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+        }
+    /* --- Layout / iOS-like groups --- */
+    body { background: #F2F2F7; 
+padding-top: 80px;
+position: fixed; min-width: 100vw;
+}
+       .header{
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            padding:25px 0px 10px 12px;
+            background:#3f72af;
+            border-bottom:1px solid var(--border-color);
+            position:fixed; top:0; z-index:10;
+            width: 100%;
+        }
+        .header a{
+            color:#a3c9f1;
+            text-decoration:none;
+            font-size:1.0rem;
+            font-weight:500;
+            text-align: left;
+        }
+        .header-title{
+            font-weight:600;
+            font-size:1.1rem;
+            text-align:center;
+            flex:1;
+            color:white;
+            margin-left: -30px;
+        }
+    .ios-group { background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); overflow: hidden; }
+    .ios-input-row { padding: 12px 16px; display:flex; align-items:center; border-bottom: 1px solid #F3F4F6; }
+    .ios-input-row:last-child { border-bottom: none; }
+    .ios-input { width:100%; border:none; outline:none; background:transparent; font-size:16px; color:#111827; text-align:right; }
+
+    /* --- Progress ring container --- */
+    .progress-ring-container {
+        position: relative;
+        width: 120px;
+        height: 120px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+       transform: scale(1.3);
+    }
+
+    svg.progress-ring {
+        position: absolute;
+        width: 110px;
+        height: 110px;
+        transform: rotate(-90deg);
+    }
+
+ .progress-ring-circle {
+    fill: none;
+    stroke-linecap: round;
+    stroke-width: 2; /* Ensure the stroke-width is consistent */
+    transition: stroke-dashoffset 300ms cubic-bezier(.2,.9,.3,1), filter 300ms ease;
+    
+    /* 1. Set the array to the circumference (approx 100.53) */
+    stroke-dasharray: 100.53 100.53; 
+    
+    /* 2. Hide the entire stroke initially */
+    stroke-dashoffset: 100.53; 
+    
+    /* 3. Optional: Rotate the circle to start at the top (12 o'clock) */
+    transform-origin: 50% 50%;
+    transform: rotate(-90deg);
+}
+
+    /* track and arc */
+    #progressCircleTrack { stroke: #E5E7EB; }
+    #progressCircle {
+        stroke: #3B82F6;
+        /* glow via filter/drop shadow */
+        filter: drop-shadow(0 6px 10px rgba(59,130,246,0.18));
+    }
+
+    /* glowing halo (soft) using pseudo-element not possible on svg; use additional circle */
+    .glow {
+      filter: drop-shadow(0 10px 20px rgba(59,130,246,0.18)) drop-shadow(0 6px 12px rgba(59,130,246,0.12));
+      transition: filter .35s ease;
+    }
+
+    /* percent text */
+    .progress-percent-display {
+        position:absolute;
+        font-size:18px;
+        font-weight:700;
+        color:#2563EB;
+        opacity:0;
+        transition: opacity .2s ease, transform .25s cubic-bezier(.2,.9,.3,1);
+        pointer-events:none;
+    }
+
+    /* Avatar container */
+    #profileImageContainer {
+        width: 96px;
+        height: 96px;
+        border-radius:9999px;
+        background: #E5E7EB;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        position: relative;
+        overflow: hidden;
+        border: 4px solid #fff;
+        box-shadow: 0 6px 14px rgba(0,0,0,0.08);
+        transition: transform 300ms cubic-bezier(.2,.9,.3,1), box-shadow 300ms ease;
+    }
+
+    /* avatar pulse while uploading */
+    .pulsing {
+      animation: pulse 1100ms infinite cubic-bezier(.2,.9,.3,1);
+      transform-origin: center;
+      box-shadow: 0 14px 30px rgba(59,130,246,0.08);
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.04); }
+      100% { transform: scale(1); }
+    }
+
+    #profileImage { width:100%; height:100%; object-fit:cover; display:hidden; }
+
+    /* spring bounce on progress jump (temporary class toggled) */
+    .spring {
+      transition: transform 450ms cubic-bezier(.175,.885,.32,1);
+      transform-origin:center;
+      transform: scale(1.06);
+    }
+
+    /* small helpers */
+    .muted { color:#6B7280; }
+    .blueBtn { color:#a3c9f1; font-weight:600; }
+
+textarea{
+outline: none; 
+width: 100%;
+}
+
+
+.hidden {
+  display: none !important;
+}
+
+/* --- New Loading Overlay Styles --- */
+#loadingOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.9); /* Semi-transparent white background */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    color: #007AFF;
+    font-size: 16px;
+    font-weight: 500;
+    transition: opacity 0.3s ease-in-out;
+}
+/* Spinner from iOS style */
+.spinner {
+  border: 4px solid rgba(0, 122, 255, 0.2);
+  border-top: 4px solid #007AFF;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 15px;
+}
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+  </style>
+</head>
+<body class="min-h-screen">
+
+<div class="header mb-4">
+    <a href="" onclick="history.back(); return false;" id="cancelButton"><i class="fas fa-chevron-left"></i> Settings</a>
+    <div class="header-title text-gray-750">Edit Profile</div>
+ <button id="doneButton" class="blueBtn">Done</button>
+    <div style="width:15px;"></div>
+</div>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600&display=swap" rel="stylesheet">
+
+<nav style="
+    position: fixed; 
+    bottom: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 70px; 
+    background: rgba(255, 255, 255, 0.85); 
+    backdrop-filter: blur(20px); 
+    -webkit-backdrop-filter: blur(20px); 
+    border-top: 1px solid rgba(0, 0, 0, 0.05); 
+    display: flex; 
+    justify-content: space-around; 
+    align-items: center; 
+    z-index: 9999; 
+    padding-bottom: env(safe-area-inset-bottom);
+    font-family: 'Inter', sans-serif;
+">
+    
+    <a href="dashboard.html" style="display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #64748b; flex: 1; transition: 0.2s;">
+        <svg style="width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2;" viewBox="0 0 24 24">
+            <rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect>
+        </svg>
+        <span style="font-size: 11px; margin-top: 4px; font-weight: 500;">Home</span>
+    </a>
+
+    <a href="inventory.html" style="display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #64748b; flex: 1; position: relative;">
+       
+        
+        <svg style="width: 22px; height: 22px; fill: white; stroke: currentColor; stroke-width: 2;" viewBox="0 0 24 24">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+            <line x1="12" y1="22.08" x2="12" y2="12"></line>
+        </svg>
+        <span style="font-size: 11px; margin-top: 4px; font-weight: 600;">Inventory</span>
+    </a>
+
+    <a href="accounting-report.html" style="display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #64748b; flex: 1;">
+        <svg style="width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2;" viewBox="0 0 24 24">
+            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline>
+        </svg>
+        <span style="font-size: 11px; margin-top: 4px; font-weight: 500;">Reports</span>
+    </a>
+
+    <a href="statistics.html" style="display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #64748b; flex: 1;">
+        <svg style="width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2;" viewBox="0 0 24 24">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line>
+        </svg>
+        <span style="font-size: 11px; margin-top: 4px; font-weight: 500;">Stats</span>
+    </a>
+
+    <a href="settings.html" style="display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #3f72af; flex: 1; position: relative;">
+  <div style="position: absolute; top: -14px; width: 20px; height: 3px; background: #3f72af; border-radius: 0 0 4px 4px;"></div>
+        <svg style="width: 22px; height: 22px; fill: rgba(37, 99, 235, 0.1); stroke: currentColor; stroke-width: 2;" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0-.33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0 .33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+        <span style="font-size: 11px; margin-top: 4px; font-weight: 500;">Settings</span>
+    </a>
+</nav>
+
+  <main class="p-4 space-y-6">
+
+    <div class="flex flex-col items-center pt-4">
+      <div class="progress-ring-container">
+
+        <svg class="progress-ring" viewBox="0 0 36 36" aria-hidden="true">
+          <circle id="progressCircleTrack" class="progress-ring-circle" r="16" cx="18" cy="18"></circle>
+
+          <circle id="progressGlow" r="16" cx="18" cy="18" class="progress-ring-circle glow" style="stroke-width:10; opacity:0;"></circle>
+
+          <circle id="progressCircle" class="progress-ring-circle" r="16" cx="18" cy="18"></circle>
+        </svg>
+
+        <div id="profileImageContainer" class="relative">
+          <img id="profileImage" class="hidden" alt="avatar">
+          <div id="profileIconText" style="font-size:44px; line-height:1;"><i class="fa fa-user muted"></i></div>
+        </div>
+
+        <div id="progressPercent" class="progress-percent-display">0%</div>
+      </div>
+
+      <button id="editPhotoButton" class="mt-3 blueBtn">Edit Photo</button>
+      <input id="imageUpload" type="file" accept="image/*" class="hidden" />
+    </div>
+
+    <div class="ios-group">
+      <div class="ios-input-row">
+        <label class="w-1/3 muted">Account</label>
+        <input id="profileName" class="ios-input" placeholder="Trading / Profile Name" />
+      </div>
+
+      <div class="ios-input-row">
+        <label id="contactFieldLabel" class="w-1/3 muted">Contact</label>
+        <input id="contactField" class="ios-input" placeholder="Email / Phone" />
+      </div>
+    </div>
+
+    <div class="ios-group">
+      <div class="ios-input-row">
+        <p class="muted">Description</p>
+      </div>
+      <div class="px-4 py-3">
+        <textarea id="description" rows="3" placeholder="Description summary" class=" resize-none" style="min-height:80px; align-text: left;"></textarea>
+      </div>
+    </div>
+
+  </main>
+
+<div id="passwordPopup" class="hidden"
+     style="position:fixed; top:0; left:0; right:0; bottom:0; 
+     background:rgba(0,0,0,0.45); display:hidden; align-items:center;
+     justify-content:center; z-index:9999;">
+  <div style="background:white; padding:20px; border-radius:10px; width: 90%; max-width:360px; margin-top: 40%; margin-left: 7%;">
+      <h3 style="margin-bottom:10px; font-weight:600; font-size:18px;">Enter Password</h3>
+      <p style="font-size:14px; margin-bottom:10px;">Enter this account's password to update the authentication email.</p>
+      <input type="password" id="passwordInput" placeholder="Password" 
+             style="width:100%; padding:10px; margin-bottom:15px; border:1px solid #ccc; border-radius:8px;">
+      <button id="passwordConfirmBtn" 
+              style="width:100%; padding:12px; background:#007AFF; color:white; border:none; border-radius:8px;">
+        Confirm
+      </button>
+  </div>
+</div>
+
+<div id="loadingOverlay" class="hidden">
+    <div class="spinner"></div>
+    <span>Processing...</span>
+</div>
+
+  <script>
+    /* ------------------ Firebase config (from your original) ------------------ */
+    const firebaseConfig = {
+        apiKey: "AIzaSyAw7L6TJtF1W0PwfStEJUC4CebUyMdQU9w",
+        authDomain: "users-66be4.firebaseapp.com",
+        databaseURL: "https://users-66be4-default-rtdb.firebaseio.com",
+        projectId: "users-66be4",
+        storageBucket: "users-66be4.firebasestorage.app",
+        messagingSenderId: "776585122050",
+        appId: "1:776585122050:web:3f452a1f16dc36ee1ef21b",
+        measurementId: "G-ZS8W4BBGD5"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    /* ------------------ ImageKit config (you provided endpoint) ------------------ */
+    const imagekitConfig = {
+        urlEndpoint: "https://ik.imagekit.io/YOUR_IMAGEKIT_ID/",
+        publicKey: "public_uWmyifZpCOsUcFPz5w0EJxoASuU=",
+        // WARNING: client-side private key is insecure. Replace with server-side token flow in production.
+        privateKey: "private_LWNMj6jq0yExzVkJTM9X0NV3Sk8="
+    };
+    const IMAGEKIT_UPLOAD_API = "https://upload.imagekit.io/api/v1/files/upload";
+
+    /* ------------------ DOM ------------------ */
+    const editPhotoButton = document.getElementById('editPhotoButton');
+    const imageUploadInput = document.getElementById('imageUpload');
+    const profileImageElement = document.getElementById('profileImage');
+    const profileIconTextElement = document.getElementById('profileIconText');
+    const profileImageContainer = document.getElementById('profileImageContainer');
+
+    const progressCircle = document.getElementById('progressCircle');
+    const progressGlow = document.getElementById('progressGlow');
+    const progressCircleTrack = document.getElementById('progressCircleTrack');
+    const progressPercent = document.getElementById('progressPercent');
+    const loadingOverlay = document.getElementById('loadingOverlay'); // NEW DOM ELEMENT
+
+    const ACCOUNT_KEY = "AV_ledger_account_key";
+    const AUTH_STATUS_KEY = "AV_ledger_auth_status";
+
+    let currentAccountData = {};
+    let isPhoneContact = false;
+
+    /* ------------------ Utility: Loading Screen Functions ------------------ */
+    function showLoading() {
+      loadingOverlay.classList.remove('hidden');
+    }
+
+    function hideLoading() {
+      loadingOverlay.classList.add('hidden');
+    }
+
+    /* ------------------ Utility: stroke circumference setup ------------------ */
+    const r = progressCircle.getAttribute('r');
+    const circumference = 2 * Math.PI * r;
+    progressCircle.style.strokeDasharray = circumference;
+    progressCircle.style.strokeDashoffset = circumference;
+    progressGlow.style.strokeDasharray = circumference;
+    progressGlow.style.strokeDashoffset = circumference;
+
+    function setProgress(percent, opts = {}) {
+      // percent in 0..100
+      const clamped = Math.max(0, Math.min(100, percent));
+      const offset = circumference * (1 - clamped / 100);
+      progressCircle.style.strokeDashoffset = offset;
+      progressGlow.style.strokeDashoffset = offset;
+
+      // show/hide percent text
+      if (clamped > 0 && clamped < 100) {
+        progressPercent.style.opacity = 1;
+        progressPercent.textContent = clamped + '%';
+        progressGlow.style.opacity = 1;
+      } else if (clamped === 100) {
+        progressPercent.style.opacity = 1;
+        progressPercent.textContent = '100%';
+        progressGlow.style.opacity = 1;
+      } else {
+        progressPercent.style.opacity = 0;
+        progressGlow.style.opacity = 0;
+      }
+
+      // tiny spring effect when jump requested
+      if (opts.spring) {
+        profileImageContainer.classList.add('spring');
+        setTimeout(()=> profileImageContainer.classList.remove('spring'), 420);
+      }
+    }
+
+    /* ------------------ Slug helper ------------------ */
+    function createSlug(text) {
+      if (!text) return '';
+      return text.toLowerCase().trim()
+        .replace(/[^\w\s-]/g, '')
+        .replace(/[\s_-]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+    }
+
+    /* ------------------ Auth check + fetch data (same logic as your original) ------------------ */
+    function checkAuthStatus() {
+      const authStatus = localStorage.getItem(AUTH_STATUS_KEY);
+      const accountKey = localStorage.getItem(ACCOUNT_KEY);
+
+      if (!authStatus || !accountKey) {
+        alert('Missing account info');
+        window.location.href = 'settings.html';
+        return false;
+      }
+      if (authStatus !== 'Admin') {
+        alert('Only Admin can edit profile.');
+        window.location.href = 'settings.html';
+        return false;
+      }
+      return true;
+    }
+
+    function fetchAndRenderData() {
+      const accountKey = localStorage.getItem(ACCOUNT_KEY);
+      const ref = database.ref(`accounts/${accountKey}`);
+      ref.once('value', snap => {
+        const data = snap.val();
+        if (!data) { alert('Account not found'); return; }
+        currentAccountData = data;
+        renderProfile(data);
+      });
+    }
+
+    function renderProfile(data) {
+      document.getElementById('profileName').value = data.displayName || data.accountName || '';
+      document.getElementById('description').value = data.description || '';
+      if (data.email && data.email.endsWith('@phone.avanti')) {
+        document.getElementById('contactFieldLabel').textContent = 'Phone';
+        document.getElementById('contactField').value = data.phone || '';
+        isPhoneContact = true;
+      } else {
+        document.getElementById('contactFieldLabel').textContent = 'Email';
+        document.getElementById('contactField').value = data.email || '';
+        isPhoneContact = false;
+      }
+      if (data.url) {
+        profileImageElement.src = data.url;
+        profileImageElement.classList.remove('hidden');
+        profileIconTextElement.style.display = 'none';
+      } else {
+        profileIconTextElement.style.display = 'block';
+      }
+    }
+
+    /* ------------------ Image compression helper ------------------ */
+    function compressImage(file, maxW=1280, quality=0.78) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.onload = () => {
+          const img = new Image();
+          img.onload = () => {
+            // compute size
+            let w = img.width;
+            let h = img.height;
+            if (w > maxW) {
+              h = Math.round(h * (maxW / w));
+              w = maxW;
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            canvas.toBlob(blob => {
+              if (!blob) { reject(new Error('Compression failed')); return; }
+              // ensure filename & type (jpeg)
+              const compressedFile = new File([blob], file.name.replace(/\.\w+$/, '.jpg'), { type: 'image/jpeg' });
+              resolve(compressedFile);
+            }, 'image/jpeg', quality);
+          };
+          img.onerror = () => reject(new Error('Invalid image'));
+          img.src = reader.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    /* ------------------ Upload logic with progress, hold at 99 until firebase save ------------------ */
+    editPhotoButton.addEventListener('click', ()=> imageUploadInput.click());
+
+    imageUploadInput.addEventListener('change', async () => {
+      const file = imageUploadInput.files[0];
+      if (!file) return;
+
+      const accountKey = localStorage.getItem(ACCOUNT_KEY);
+      if (!accountKey) {
+        alert('Missing account key.');
+        return;
+      }
+
+      // UI: reset and show compression/upload
+      setProgress(0);
+      editPhotoButton.textContent = 'Preparing…';
+      editPhotoButton.disabled = true;
+
+      // Start pulsing avatar
+      profileImageContainer.classList.add('pulsing');
+
+      try {
+        // 1) compress image client-side
+        const compressed = await compressImage(file, 1280, 0.78);
+        // 2) prepare upload
+        const authString = btoa(imagekitConfig.privateKey + ':'); // insecure in client - ok for dev/test only
+        const xhr = new XMLHttpRequest();
+        const formData = new FormData();
+        formData.append('file', compressed);
+        formData.append('fileName', `${accountKey}_profile_${Date.now()}.jpg`);
+        formData.append('publicKey', imagekitConfig.publicKey);
+
+        // track upload progress (hold at 99 until firebase save)
+        xhr.upload.addEventListener('progress', e => {
+          if (e.lengthComputable) {
+            let percent = Math.round((e.loaded / e.total) * 100);
+            if (percent >= 100) percent = 99;
+            setProgress(percent, { spring: true });
+            editPhotoButton.textContent = `Uploading ${percent}%`;
+          }
+        });
+
+        xhr.onreadystatechange = async function() {
+          if (xhr.readyState === 4) {
+            if (xhr.status !== 200) {
+              profileImageContainer.classList.remove('pulsing');
+              editPhotoButton.disabled = false;
+              editPhotoButton.textContent = 'Edit Photo';
+              setProgress(0);
+              alert('Upload failed to ImageKit.');
+              return;
+            }
+
+            // parse response and save to firebase
+            const res = JSON.parse(xhr.responseText);
+            const imageUrl = res.url || (imagekitConfig.urlEndpoint + (res.name || ''));
+
+            try {
+              // update firebase account url BEFORE showing 100%
+              await database.ref(`accounts/${accountKey}`).update({ url: imageUrl });
+
+              // update UI avatar + 100% progress
+              profileImageElement.src = imageUrl;
+              profileImageElement.classList.remove('hidden');
+              profileIconTextElement.style.display = 'none';
+
+              setProgress(100);
+              editPhotoButton.textContent = 'Uploaded';
+
+              // stop pulsing and fade out progress after a moment
+              setTimeout(()=> {
+                profileImageContainer.classList.remove('pulsing');
+                setProgress(0);
+                editPhotoButton.textContent = 'Edit Photo';
+              }, 900);
+
+              // also update local data object
+              currentAccountData.url = imageUrl;
+
+            } catch(err) {
+              profileImageContainer.classList.remove('pulsing');
+              setProgress(0);
+              editPhotoButton.disabled = false;
+              editPhotoButton.textContent = 'Edit Photo';
+              alert('Failed to save image URL to Firebase.');
+              console.error(err);
+            }
+          }
+        };
+
+        // send
+        xhr.open('POST', IMAGEKIT_UPLOAD_API, true);
+        xhr.setRequestHeader('Authorization', `Basic ${authString}`);
+        xhr.send(formData);
+
+      } catch (err) {
+        profileImageContainer.classList.remove('pulsing');
+        setProgress(0);
+        editPhotoButton.disabled = false;
+        editPhotoButton.textContent = 'Edit Photo';
+        alert('Image processing failed: ' + (err.message || err));
+        console.error(err);
+      }
+    });
+
+    /* ------------------ Save profile (Done button) ------------------ */
+/* ------------------ Save profile (Done button) - Delete Old Auth User Only ------------------ */
+document.getElementById("doneButton").addEventListener("click", async () => {
+    const oldKey = localStorage.getItem(ACCOUNT_KEY);
+    if (!oldKey) return alert("Missing account key");
+
+    const newName = document.getElementById("profileName").value.trim();
+    const newDesc = document.getElementById("description").value.trim();
+    const newContact = document.getElementById("contactField").value.trim();
+    // Use the original key for the slug unless you want the DB structure to change:
+    const newSlug = createSlug(newName); 
+    const oldEmail = currentAccountData.email; // Original user's email
+  
+    let newEmail;
+    let updatedData = {
+        ...currentAccountData,
+        accountName: newName,
+        displayName: newName,
+        description: newDesc,
+        url: currentAccountData.url || null,
+        accountTitleSlug: newSlug // Update the slug inside the record
+    };
+
+    if (isPhoneContact) {
+        updatedData.phone = newContact;
+        newEmail = `${newContact}@phone.avanti`;
+        updatedData.email = newEmail;
+    } else {
+        newEmail = newContact;
+        updatedData.email = newEmail;
+        delete updatedData.phone;
+    }
+
+    delete updatedData.tempImageUrl;
+
+    // 1. If email unchanged, just save to DB and exit.
+    if (newEmail === oldEmail) {
+        return saveProfileToDatabase(oldKey, newSlug, updatedData); // This will now just perform an update
+    }
+
+    // 2. Check uniqueness of email (in your Realtime Database)
+    const allAccounts = (await database.ref("accounts").once("value")).val() || {};
+    for (let k in allAccounts) {
+        if (k !== oldKey && allAccounts[k].email === newEmail) {
+            alert("This email/contact is already in use.");
+            return;
+        }
+    }
+
+    // Ask for password
+    document.getElementById("passwordPopup").classList.remove("hidden");
+
+    document.getElementById("passwordConfirmBtn").onclick = async () => {
+        const pwd = document.getElementById("passwordInput").value.trim();
+        if (!pwd) return alert("Enter password.");
+
+        document.getElementById("passwordPopup").classList.add("hidden");
+        showLoading(); // <<< SHOW LOADING SCREEN
+
+        // Save Admin details before signing out
+        const adminEmail = localStorage.getItem("admin_email");
+        const adminPass = localStorage.getItem("admin_pass");
+
+        try {
+            /* STEP 1: Sign in as the target user (necessary to delete it later) */
+            let targetUser = await firebase.auth().signInWithEmailAndPassword(oldEmail, pwd);
+            targetUser = targetUser.user;
+            
+            /* STEP 2: Delete the Old Auth User */
+            const cred = firebase.auth.EmailAuthProvider.credential(oldEmail, pwd); 
+            await targetUser.reauthenticateWithCredential(cred); // Re-auth is often required for delete
+            await targetUser.delete();
+
+            /* STEP 3: Create New Auth User */
+            await firebase.auth().createUserWithEmailAndPassword(newEmail, pwd);
+            
+            /* STEP 4: Save DB Changes (UPDATE ONLY, no deletion/creation of key) */
+            // Since we are not changing the DB key (oldKey), we only need to update the data
+            const ref = database.ref("accounts");
+            await ref.child(oldKey).update(updatedData); // Use oldKey to update the existing record
+            
+            /* STEP 5: Log out of the newly created user */
+            await firebase.auth().signOut();
+
+            /* STEP 6: Restore Admin session */
+            if (adminEmail && adminPass) {
+                await firebase.auth().signInWithEmailAndPassword(adminEmail, adminPass);
+            } else {
+                console.warn("Admin session credentials missing. Admin user logged out.");
+            }
+
+            hideLoading(); // <<< HIDE LOADING SCREEN
+            alert("Profile email changed and user swapped successfully!");
+            window.location.href = "settings.html";
+
+        } catch (err) {
+            console.error(err);
+            hideLoading(); // <<< HIDE LOADING SCREEN ON FAILURE
+            document.getElementById("passwordPopup").classList.remove("hidden"); // Re-open popup for re-try
+            document.getElementById("passwordInput").value = '';
+            alert("Authentication/Swap Failed: " + (err.message || "An error occurred during user creation/deletion."));
+        }
+    };
+});
+
+
+// Reworked saveProfileToDatabase to ONLY handle updates if the key (slug) hasn't changed.
+// If the key (slug) *has* changed, this function will still perform the swap, 
+// as instructed by the previous request.
+async function saveProfileToDatabase(oldKey, newSlug, updatedData) {
+    const ref = database.ref("accounts");
+    showLoading(); // <<< SHOW LOADING SCREEN
+    
+    try {
+        if (newSlug !== oldKey) {
+            // If the slug changes, we must perform the swap (delete old, create new)
+            await ref.child(newSlug).set(updatedData);
+            await ref.child(oldKey).remove();
+            localStorage.setItem(ACCOUNT_KEY, newSlug);
+        } else {
+            // If the slug is the same, just update the existing record
+            await ref.child(oldKey).update(updatedData);
+        }
+        hideLoading(); // <<< HIDE LOADING SCREEN
+        alert("Profile updated successfully!");
+        window.location.href = "settings.html";
+    } catch (err) {
+        console.error(err);
+        hideLoading(); // <<< HIDE LOADING SCREEN ON FAILURE
+        alert("Failed to update profile.");
+    }
+}
+
+
+document.addEventListener('DOMContentLoaded', (event) => {
+    // 1. Get the modal element
+    const modal = document.getElementById('passwordPopup');
+
+    // 2. Add a click event listener to the modal
+    modal.addEventListener('click', (e) => {
+        // 3. Check if the element that was clicked (e.target) is
+        //    the modal element itself. This means the user clicked 
+        //    the dark background, not the inner white box.
+        if (e.target === modal) {
+            // 4. Close the modal by adding the 'hidden' class 
+            //    and updating the inline style for safety
+            modal.classList.add('hidden');
+            modal.style.display = 'hidden'; 
+        }
+    });
+});
+
+    /* Cancel */
+    document.getElementById('cancelButton').addEventListener('click', ()=> {
+      window.location.href = 'settings.html';
+    });
+
+    /* init */
+    if (checkAuthStatus()) fetchAndRenderData();
+  </script>
+
+</body>
+</html>

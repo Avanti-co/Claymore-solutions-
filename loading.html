@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avanti Ledger | Loading</title>
+
+
+
+    <!-- GSAP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#3f72af">
+
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("/service-worker.js")
+        .then(reg => console.log("Service worker registered:", reg))
+        .catch(err => console.error("Service worker error:", err));
+    });
+  }
+</script>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #154C8E;
+            overflow: hidden;
+        }
+
+        .logo-container {
+            position: relative;
+            width: 260px;
+            height: 300px; /* space for loader */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .logo {
+            max-width: 300px;
+            max-height: 260px;
+            opacity: 0;
+            will-change: transform, opacity;
+        }
+
+        /* Loader */
+        .loader {
+            position: absolute;
+            bottom: 10px;
+            width: 160px;
+            height: 4px;
+            background: rgba(255,255,255,0.25);
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        .loader-progress {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #ffffff, #cfe2ff);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="logo-container">
+        <img id="ledger-logo" src="ledger-logo.png" alt="Ledger" class="logo">
+
+        <!-- Loading bar -->
+        <div class="loader">
+            <div class="loader-progress" id="loaderProgress"></div>
+        </div>
+    </div>
+
+    <script>
+        const logo = document.getElementById("ledger-logo");
+        const loader = document.getElementById("loaderProgress");
+
+        const tl = gsap.timeline({
+            onUpdate: () => {
+                loader.style.width = `${tl.progress() * 100}%`;
+            },
+            onComplete: () => {
+                window.location.href = "index.html";
+            }
+        });
+
+        // Fade in logo
+        tl.fromTo(logo,
+            { scale: 0.9, opacity: 0 },
+            { scale: 1, opacity: 1, duration: 1.2, ease: "power2.out" }
+        )
+
+        // Pulse while loading
+        .to(logo, {
+            scale: 1.06,
+            duration: 1.8,
+            repeat: 2,
+            yoyo: true,
+            ease: "sine.inOut"
+        })
+
+        // Final fade out
+        .to(logo, {
+            opacity: 0,
+            duration: 0.8,
+            ease: "power2.inOut"
+        });
+    </script>
+
+</body>
+</html>

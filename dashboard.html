@@ -1,0 +1,1483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=0.85, user-scalable=no">
+    <title>Avanti Ledger | Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#3f72af">
+
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("/service-worker.js")
+        .then(reg => console.log("Service worker registered:", reg))
+        .catch(err => console.error("Service worker error:", err));
+    });
+  }
+</script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
+                    },
+                    colors: {
+                        'avanti-blue': '#3f72af', // Avanti Header Color
+                        'neutral-light': '#f9f9f9', // Merging reports color
+                        'neutral-dark': '#333333', // Merging reports color
+                    },
+                    animation: {
+                        'slide-in-left': 'slideInLeft 0.3s ease-out forwards',
+                        'fade-in': 'fadeIn 0.2s ease-out forwards',
+                    },
+                    keyframes: {
+                        slideInLeft: {
+                            '0%': { transform: 'translateX(-100%)' },
+                            '100%': { transform: 'translateX(0)' },
+                        },
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Ensures 100% height and width */
+        html, body, #root {
+            height: 100%;
+            width: 100%;
+            overflow: hidden; /* Prevent body scroll, main handles its own scroll */
+padding-top: 12px;
+        }
+        
+        body {
+            -webkit-tap-highlight-color: transparent;
+            background-color: #f3f4f6;
+        }
+
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        
+        /* Custom class for the slim/extended menu - Menu does not push content, it overlays */
+        .sidebar {
+            width: 65px; /* Fixed slim width */
+            transition: width 0.3s ease-out;
+            will-change: width, transform;
+            height: 100%; /* Full height to expand over content */
+            position: fixed; /* Fixed position */
+            top: 0; /* Align to top */
+            left: 0;
+            z-index: 50; /* Above all content */
+        }
+        
+        .sidebar.expanded {
+            width: 280px; /* Wider expanded width for better display */
+        }
+        
+        /* The backdrop for the expanded menu */
+        .backdrop {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 49;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+            pointer-events: none;
+
+        }
+        
+        .backdrop.visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        /* Main content needs to accommodate the slim sidebar */
+        .main-content {
+            margin-left: 65px; 
+            width: calc(100% - 65px);
+            min-height: 100vh; /* Ensure full page height */
+        }
+        
+        /* Chart grid styling for professional look */
+        .chart-grid {
+             border-radius: 12px;
+             border: 1px solid #e5e7eb;
+             background-color: #fff;
+             padding: 1rem;
+        }
+
+        /* Custom chart container for fixed height and internal grid */
+        .chart-container {
+            height: 250px;
+        }
+
+        .chart-container canvas {
+            max-height: 100%;
+            max-width: 100%;
+        }
+
+        /* Chart.js grid line styling */
+        .chart-grid-container .chart-grid canvas {
+             /* Customize grid lines if needed, better to do this in chart options */
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div id="root" class="flex w-full h-full"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useCallback, useRef } = React;
+
+        // --- FIREBASE CONFIGURATION AND INITIALIZATION ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyAw7L6TJtF1W0PwfStEJUC4CebUyMdQU9w",
+            authDomain: "users-66be4.firebaseapp.com",
+            databaseURL: "https://users-66be4-default-rtdb.firebaseio.com",
+            projectId: "users-66be4",
+            storageBucket: "users-66be4.firebasestorage.app",
+            messagingSenderId: "776585122050",
+            appId: "1:776585122050:web:3f452a1f16dc36ee1ef21b",
+            measurementId: "G-ZS8W4BBGD5"
+        };
+
+        let firebaseApp;
+        try {
+            firebaseApp = firebase.initializeApp(firebaseConfig);
+        } catch (error) {
+            console.error("Firebase Initialization Error:", error);
+        }
+        const database = firebaseApp ? firebase.database() : null;
+        const db = database;
+
+
+ 
+
+        // --- ICON SYSTEM ---
+        const Icon = ({ path, size = 24, className = "", strokeWidth = 2 }) => (
+            <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                width={size} 
+                height={size} 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth={strokeWidth} 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                className={className}
+            >
+                <g dangerouslySetInnerHTML={{ __html: path }} />
+            </svg>
+        );
+
+        const Icons = {
+            ChevronRight: (props) => <Icon path='<polyline points="9 18 15 12 9 6"></polyline>' {...props} />,
+Menu: (props) =>
+  <Icon
+    path='
+      <line x1="4" y1="7" x2="20" y2="7"></line>
+      <line x1="4" y1="12" x2="20" y2="12"></line>
+      <line x1="4" y1="17" x2="20" y2="17"></line>
+    '
+    {...props}
+  />,
+
+            ChevronLeft: (props) => <Icon path='<polyline points="15 18 9 12 15 6"></polyline>' {...props} />,
+            User: (props) => <Icon path='<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle>' {...props} />,
+            Grid: (props) => <Icon path='<rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect>' {...props} />,
+            Package: (props) => <Icon path='<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line>' {...props} />,
+            FileText: (props) => <Icon path='<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline>' {...props} />,
+            BookOpen: (props) => <Icon path='<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>' {...props} />,
+            Settings: (props) => <Icon path='<circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0-.33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0 .33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>' {...props} />,
+            LogOut: (props) => <Icon path='<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line>' {...props} />,
+            Plus: (props) => <Icon path='<line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line>' {...props} />,
+            DollarSign: (props) => <Icon path='<line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>' {...props} />,
+User: (props) => (
+  <Icon
+    path='<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle>'
+    {...props}
+  />
+),
+            TrendingUp: (props) => <Icon path='<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline>' {...props} />,
+            TrendingDown: (props) => <Icon path='<polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline>' {...props} />,
+            CreditCard: (props) => <Icon path='<rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line>' {...props} />,
+            AlertCircle: (props) => <Icon path='<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>' {...props} />,
+            ShoppingCart: (props) => <Icon path='<circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>' {...props} />,
+            Zap: (props) => <Icon path='<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>' {...props} />,
+            Bell: (props) => <Icon path='<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path>' {...props} />,
+            ShieldOff: (props) => <Icon path='<path d="M19.69 13A2.81 2.81 0 0 0 21 12V5l-9-4-2.88 1.28M2.21 2.21 4 4M15 13.4V22l-3-1-2.92 1-.95-2.29"></path><line x1="1" y1="1" x2="23" y2="23"></line>' {...props} />,
+        };
+
+        // --- UTILS & DATE FUNCTIONS (Kept as is for functionality) ---
+        
+        const formatCurrency = (amount) => {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD', 
+                minimumFractionDigits: 0,
+            }).format(amount).replace('$', 'K'); 
+        };
+
+        const formatTotalUnits = (units) => {
+            if (units === null || units === undefined || isNaN(units)) return '0';
+            return new Intl.NumberFormat('en-US').format(Math.round(units));
+        };
+        
+        const formatDateKey = (date) => {
+            if (!date) return 'N/A';
+            const d = new Date(date);
+            if (isNaN(d.getTime())) return 'N/A'; 
+            
+            return [
+                d.getFullYear(),
+                String(d.getMonth() + 1).padStart(2, '0'),
+                String(d.getDate()).padStart(2, '0')
+            ].join('-');
+        };
+
+        const formatDateForDisplay = (dateKey) => {
+            if (!dateKey || dateKey === 'N/A') return 'N/A';
+            const [year, month, day] = dateKey.split('-').map(Number);
+            const date = new Date(year, month - 1, day); 
+            return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+        };
+
+        const getStartOfWeek = (date) => {
+            const d = new Date(date);
+            const day = d.getDay();
+            const diff = d.getDate() - day + (day === 0 ? -6 : 1); 
+            return new Date(d.setDate(diff));
+        };
+
+        const getWeekData = (startDate) => {
+            const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+            const start = getStartOfWeek(startDate);
+            const week = [];
+            
+            for (let i = 0; i < 7; i++) {
+                const date = new Date(start);
+                date.setDate(start.getDate() + i);
+                week.push({
+                    day: days[i],
+                    dateKey: formatDateKey(date),
+                    date: date,
+                });
+            }
+            return week;
+        };
+        
+        const getDateRangeString = (weekData) => {
+            if (weekData.length === 0) return "";
+            const start = new Date(weekData[0].date);
+            const end = new Date(weekData[6].date);
+            
+            const startDay = start.getDate();
+            const endDay = end.getDate();
+            const startMonth = start.toLocaleString('default', { month: 'short' });
+            const endMonth = end.toLocaleString('default', { month: 'short' });
+            
+            const currentYear = new Date().getFullYear();
+            const showYear = start.getFullYear() !== currentYear || end.getFullYear() !== currentYear;
+            const yearStr = showYear ? `, ${end.getFullYear()}` : '';
+
+            if (startMonth === endMonth) {
+                 return `${startDay} - ${endDay} ${startMonth}${yearStr}`;
+            } else {
+                 return `${startDay} ${startMonth} - ${endDay} ${endMonth}${yearStr}`;
+            }
+        };
+
+        const getWeekIdentifier = (date) => {
+            const d = new Date(date);
+            const start = getStartOfWeek(d);
+            
+            const startMonthName = start.toLocaleString('default', { month: 'long' });
+            
+            return `${startMonthName}, ${start.getFullYear()}`;
+        }
+        
+        // --- FIREBASE DATA FUNCTIONS (Updated with mock profile url and display name) ---
+        
+        const getLocalStorage = () => {
+            return new Promise(resolve => {
+                const accountKey = localStorage.getItem('AV_ledger_account_key') || 'sample_account_key'; 
+                const username = localStorage.getItem('AV_ledger_username') || 'sample_user';
+                resolve({ 
+                    accountKey, 
+                    username, 
+                    accountName: accountKey, // MOCK Account Display Name
+                    logoUrl: 'https://i.ibb.co/6R22B2y/avanti-logo.png', // Mock Avanti logo
+                    profileUrl: 'https://i.ibb.co/L5kL2X5/mock-profile.png' // MOCK User Profile Image
+                }); 
+            });
+        };
+
+        // --- useDashboardData (Kept the core logic) ---
+        
+        const useDashboardData = (weekStartDate) => {
+            // ... (Keep the useDashboardData hook exactly as it was, including all internal functions: calculateSalesMetrics, calculateInventoryMetrics, and useEffect logic)
+            // Note: The original useDashboardData logic is omitted here for brevity but should be included in the final code.
+            
+            const [fullData, setFullData] = useState(null);
+            const [isLoading, setIsLoading] = useState(true);
+            const [error, setError] = useState(null);
+            const [userDetails, setUserDetails] = useState({ accountName: '', username: '', logoUrl: '', profileUrl: '' });
+            
+            // Generate week data
+            const currentWeekData = useMemo(() => getWeekData(weekStartDate), [weekStartDate]);
+            const lastWeekStartDate = useMemo(() => {
+                const d = new Date(weekStartDate);
+                d.setDate(d.getDate() - 7);
+                return d;
+            }, [weekStartDate]);
+            const lastWeekData = useMemo(() => getWeekData(lastWeekStartDate), [lastWeekStartDate]);
+
+            // Collect all 14 date keys to fetch relevant data
+            const allDateKeys = useMemo(() => 
+                [...currentWeekData.map(d => d.dateKey), ...lastWeekData.map(d => d.dateKey)]
+            , [currentWeekData, lastWeekData]);
+
+            // --- SALES METRICS CALCULATOR (Copied from Sales Report) ---
+            const calculateSalesMetrics = useCallback((dailyData) => {
+                let totalSales = 0; 
+                let totalWorkingExpenses = 0;
+                let totalIncome = 0; 
+                let orders = 0;
+                let dailyProductMetrics = {}; 
+
+                const items = dailyData.items || {};
+                
+                Object.values(items).forEach(item => {
+                    const salesUnits = (item.opening || 0) + (item.orders || 0) - (item.closing || 0);
+                    
+                    if (salesUnits > 0) {
+                        const revenue = salesUnits * (item.price || 0); 
+                        totalSales += revenue;
+                        
+                        dailyProductMetrics[item.id] = {
+                            id: item.id,
+                            name: item.name || `Item ${item.id}`,
+                            units_sold: salesUnits,
+                            revenue: revenue,
+                        };
+                    }
+                    orders += (item.orders || 0);
+                });
+                
+                const expenses = dailyData.expenses || {};
+                Object.values(expenses).forEach(expense => {
+                    totalWorkingExpenses += parseFloat(expense.amount || 0);
+                });
+                
+                const incomes = dailyData.incomes || {};
+                 Object.values(incomes).forEach(income => {
+                    totalIncome += parseFloat(income.amount || 0);
+                });
+                
+                const totalSalesRevenue = totalSales + totalIncome;
+                const netSaleRevenue = totalSalesRevenue - totalWorkingExpenses;
+                
+                return { 
+                    totalSales, 
+                    totalWorkingExpenses, 
+                    totalIncome, 
+                    totalSalesRevenue,
+                    netSaleRevenue,
+                    expenses: Object.values(expenses).map(e => ({...e, amount: parseFloat(e.amount || 0)})),
+                    incomes: Object.values(incomes).map(i => ({...i, amount: parseFloat(i.amount || 0)})),
+                    orders: orders, 
+                    dailyProductMetrics: Object.values(dailyProductMetrics) 
+                };
+            }, []);
+            
+            // --- INVENTORY METRICS CALCULATOR (FIXED) ---
+            const calculateInventoryMetrics = useCallback((allDatesData, emptiesData) => {
+                let totalStockUnits = 0;
+                let totalExpectedRevenue = 0;
+                let totalEmptiesUnits = 0;
+                let inventoryDate = 'N/A';
+                
+                const datesKeys = Object.keys(allDatesData).sort();
+
+                let latestSnapshot = {};
+                for (let i = datesKeys.length - 1; i >= 0; i--) {
+                    const dateKey = datesKeys[i];
+                    if (allDatesData[dateKey] && (allDatesData[dateKey].balanced === true || i === datesKeys.length - 1)) {
+                        inventoryDate = dateKey;
+                        latestSnapshot = allDatesData[dateKey].items || {};
+                        if (allDatesData[dateKey].balanced === true) break;
+                    }
+                }
+                
+                const itemDataMap = {};
+                Object.entries(latestSnapshot).forEach(([itemId, data]) => {
+                    const stock = data.closing || 0; 
+                    const price = data.price || 0;
+                    const name = data.name || `Item ${itemId}`;
+
+                    totalStockUnits += stock;
+                    totalExpectedRevenue += stock * price;
+                    itemDataMap[itemId] = { name, price, stock, lastOrderCost: data.lastOrderCost || 0 };
+                });
+                
+                Object.entries(emptiesData).forEach(([itemId, emptyItemData]) => {
+                    
+                    if (!itemDataMap[itemId]) return;
+                    
+                    const initialCount = emptyItemData.initialCount || 0;
+                    const startDateKey = emptyItemData.startDate;
+                    if (!startDateKey) return; 
+
+                    let emptiesCount = initialCount;
+                    
+                    datesKeys.filter(dateKey => dateKey >= startDateKey).forEach(dateKey => {
+                        const dayData = allDatesData[dateKey].items && allDatesData[dateKey].items[itemId];
+                        if (dayData) {
+                            const opening = dayData.opening || 0;
+                            const orders = dayData.orders || 0;
+                            const closing = dayData.closing || 0;
+                            
+                            const sales = opening + orders - closing;
+                            
+                            emptiesCount += (sales - orders);
+                        }
+                    });
+                    
+                    totalEmptiesUnits += Math.max(0, emptiesCount);
+                });
+                
+                return { 
+                    totalStockUnits, 
+                    totalExpectedRevenue, 
+                    totalEmptiesUnits, 
+                    inventoryDate: inventoryDate === 'N/A' ? 'N/A' : formatDateForDisplay(inventoryDate),
+                };
+            }, []);
+            
+            const getFirebaseRef = async (accountKey, username) => {
+                if (!database) {
+                    throw new Error("Firebase not initialized.");
+                }
+firebase.database()
+  .ref(`accounts/${accountKey}/displayName`)
+  .once("value")
+  .then(snapshot => {
+    const nameEl = document.getElementById("accName");
+
+    if (!nameEl) return;
+
+    if (snapshot.exists() && snapshot.val()) {
+      // Put the displayName
+      nameEl.textContent = snapshot.val();
+    } else {
+      // Fallback text if no displayName
+      nameEl.textContent = "Account";
+    }
+  });
+firebase.database()
+  .ref(`accounts/${accountKey}/url`)
+  .once("value")
+  .then(snapshot => {
+    const img = document.getElementById("profileUrl");
+    const container = document.getElementById("profileContainer");
+
+    if (!container) return;
+
+    if (snapshot.exists() && snapshot.val()) {
+      if (img) img.src = snapshot.val();
+    } else {
+      if (img) img.remove();
+
+      container.innerHTML = `
+        <div class="w-10 h-10 rounded-full bg-avanti-blue text-white flex items-center justify-center" onclick="window.location='profile.html'">
+          <!-- User Icon SVG -->
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+        </div>
+      `;
+    }
+  });
+
+
+                
+                const accountRef = database.ref(`accounts/${accountKey}`);
+                const syncSnapshot = await accountRef.child('settings/synchronization').once('value');
+                const syncSetting = syncSnapshot.val();
+                
+                let dataPath = '';
+                let targetUser = username;
+
+                if (syncSetting === 'all') {
+                    dataPath = `global_ledger`;
+                } else {
+                    const syncUserSnapshot = await accountRef.child(`profiles/${username}/syncingWith`).once('value');
+                    const syncingWith = syncUserSnapshot.val();
+                    
+                    let syncedUser = null;
+                    if (syncingWith) {
+                        const syncedUserKey = Object.keys(syncingWith).find(key => syncingWith[key] === true);
+                        if (syncedUserKey) {
+                            syncedUser = syncedUserKey;
+                            targetUser = syncedUser;
+                        }
+                    }
+                    dataPath = `profiles/${targetUser}`;
+                }
+                
+                return { 
+                    statsPath: `accounts/${accountKey}/${dataPath}/avanti_stats/dates`,
+                    emptiesPath: `accounts/${accountKey}/${dataPath}/empties_tracking`,
+
+                    targetUser,
+                    accountKey
+
+                };
+            };
+
+            useEffect(() => {
+                const fetchData = async () => {
+                    setIsLoading(true);
+                    setError(null);
+                    try {
+                        const { accountKey, username, logoUrl, profileUrl } = await getLocalStorage();
+
+if (!accountKey || !username) {
+  throw new Error("Missing keys in local storage.");
+}
+
+// Fetch account name from Firebase
+firebase.database()
+  .ref(`accounts/${accountKey}/displayName`)
+  .once("value")
+  .then(snapshot => {
+    const accountName = snapshot.exists() && snapshot.val()
+      ? snapshot.val()
+      : "Account";
+
+    // Update state
+    setUserDetails({ accountName, username, logoUrl, profileUrl });
+
+    // Initialize UI directly
+    const el = document.getElementById("accName");
+    if (el) {
+      el.textContent = accountName;
+    }
+  });
+                        const { statsPath, emptiesPath } = await getFirebaseRef(accountKey, username);
+
+                        const [statsSnap, emptiesSnap] = await Promise.all([
+                            database.ref(statsPath).once('value'),
+                            database.ref(emptiesPath).once('value'),
+                        ]);
+                        
+                        const rawDatesData = statsSnap.val() || {};
+                        const rawEmptiesData = emptiesSnap.val() || {};
+                        const allAvailableDateKeys = Object.keys(rawDatesData).sort();
+
+                        const processedData = {
+                            sales: {
+                                currentWeekMetrics: [],
+                                lastWeekTotalRevenue: 0,
+                                currentWeekTotalRevenue: 0,
+                                weeklyExpenses: [],
+                                weeklyIncomes: [],
+                                weeklyOrders: [],
+                            },
+                            inventory: {},
+                            productMetrics: new Map(),
+                        };
+                        
+                        allDateKeys.forEach(dateKey => {
+                            const dailyData = rawDatesData[dateKey] || {};
+                            const metrics = calculateSalesMetrics(dailyData);
+                            
+                            const isCurrentWeek = currentWeekData.some(d => d.dateKey === dateKey);
+                            
+                            if (isCurrentWeek) {
+                                processedData.sales.currentWeekMetrics.push({
+                                    label: currentWeekData.find(d => d.dateKey === dateKey).day,
+                                    dateKey: dateKey,
+                                    ...metrics,
+                                });
+                                processedData.sales.currentWeekTotalRevenue += metrics.totalSalesRevenue;
+                                
+                                processedData.sales.weeklyExpenses.push(...metrics.expenses.map(e => ({...e, dateKey})));
+                                processedData.sales.weeklyIncomes.push(...metrics.incomes.map(i => ({...i, dateKey})));
+                                processedData.sales.weeklyOrders.push({
+                                    dateKey,
+                                    orders: metrics.orders,
+                                });
+                                
+                                metrics.dailyProductMetrics.forEach(item => {
+                                    if (processedData.productMetrics.has(item.id)) {
+                                        const existing = processedData.productMetrics.get(item.id);
+                                        existing.units_sold += item.units_sold;
+                                        existing.revenue += item.revenue;
+                                    } else {
+                                        processedData.productMetrics.set(item.id, {...item});
+                                    }
+                                });
+
+                            } else {
+                                processedData.sales.lastWeekTotalRevenue += metrics.totalSalesRevenue;
+                            }
+                        });
+                        
+                        processedData.inventory = calculateInventoryMetrics(rawDatesData, rawEmptiesData);
+                        
+                        processedData.productMetrics = Array.from(processedData.productMetrics.values());
+
+                        setFullData(processedData);
+                        
+                    } catch (err) {
+                        console.error("Dashboard Data Fetching Error:", err);
+                        setError("Failed to fetch dashboard data: " + err.message);
+                    } finally {
+                        setIsLoading(false);
+                    }
+                };
+
+                fetchData();
+            }, [allDateKeys, calculateSalesMetrics, calculateInventoryMetrics, currentWeekData]);
+
+            return { fullData, isLoading, error, currentWeekData, userDetails, lastWeekData };
+        };
+
+
+        // --- UI COMPONENTS ---
+
+        const Card = ({ children, className = "", onClick }) => (
+            <div 
+                onClick={onClick}
+                className={`bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden ${onClick ? 'active:scale-[0.98] transition-transform duration-100 cursor-pointer' : ''} ${className}`}
+            >
+                {children}
+            </div>
+        );
+        
+        // REVISED SIDEBAR/MENU
+        const Sidebar = ({ isExpanded, toggleExpand, userDetails }) => {
+            const navItems = [
+                { icon: Icons.Grid, label: "Dashboard", href: "#", current: true },
+                { icon: Icons.FileText, label: "Statistics", href: "statistics.html" },
+                { icon: Icons.Package, label: "Inventory", href: "inventory.html" },
+                { icon: Icons.TrendingUp, label: "Reports", href: "accounting-report.html" },
+                { icon: Icons.BookOpen, label: "Notes", href: "notes.html" },
+                { icon: Icons.Settings, label: "Settings", href: "settings.html" },
+            ];
+
+const handleLogout = async () => {
+  // 1. Show the confirmation dialog
+  const confirmed = window.confirm(
+    "⚠️ Are you sure you want to log out?\nYou will need to sign in again."
+  );
+
+  // 2. If they click "Cancel", stop here
+  if (!confirmed) return;
+
+  // 3. If they click "OK", clear the data immediately
+  localStorage.removeItem("AV_ledger_account_key");
+  localStorage.removeItem("AV_ledger_username");
+  localStorage.removeItem("AV_ledger_auth_status");
+
+  // 4. Redirect to the home page
+  window.location.href = "index.html";
+};
+
+
+            return (
+                <div className={`sidebar ${isExpanded ? 'expanded animate-slide-in-left' : 'slim'} bg-white border-r border-gray-200 flex flex-col shrink-0 transition-all duration-300 ease-in-out mt-[65px] h-[92vh]`}>
+                    
+                    {/* Top Section - Profile & Account Display Name */}
+                    <div className="p-2 relative flex flex-col items-start justify-start border-b border-gray-200 pt-4">
+                        <div className={`flex items-center w-full ${isExpanded ? 'p-3' : 'justify-center py-2'}`} onclick="window.location='profile.html'">
+                            <div id="profileContainer" onclick="window.location='profile1.html'"><a href="profile.html">
+<img id="profileUrl" alt="User Profile" class="w-10 h-10 rounded-full object-cover" onclick="location.href='profile.html'" />
+</a>
+</div>
+                            
+                            {isExpanded && (
+                                <div className="ml-3 overflow-hidden transition-opacity duration-300 opacity-100" >
+                                    {/* Account Display Name */}
+                                    <span id="accName"className="font-bold text-gray-900 text-m leading-tight truncate" href="profile.html" >{userDetails.accountName}</span>
+                                    <p className="text-s text-gray-500 leading-tight truncate">{userDetails.username}</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    
+                    {/* Navigation Items */}
+                    <nav className="flex-1 p-2 space-y-1 overflow-y-auto no-scrollbar mt-10">
+                        {navItems.map((item) => (
+                            <a 
+                                key={item.label}
+                                href={item.href}
+                                className={`flex items-center ${isExpanded ? 'justify-start px-3' : 'justify-center'} py-3 rounded-lg transition-colors text-gray-700 hover:bg-avanti-blue/10 hover:text-avanti-blue ${item.current ? 'bg-avanti-blue shadow-lg text-white' : ''}`}
+                            >
+                                <item.icon size={25} className={`shrink-0 ${item.current ? 'text-white' : 'text-gray-500'}`} />
+                                {isExpanded && (
+                                    <span className={`ml-4 text-sm font-semibold transition-opacity duration-300 ${item.current ? 'text-white' : ''}`}>{item.label}</span>
+                                )}
+                            </a>
+                        ))}
+                    </nav>
+
+                    {/* Bottom Section - Action Buttons */}
+                    <div className="p-2 border-t border-gray-200 space-y-1 shrink-0">
+                      {isExpanded && (
+  <a
+    href="manage-devices.html"
+    className="flex items-center justify-start px-3 py-3 rounded-lg transition-colors text-gray-700 hover:bg-green-500 hover:text-white group"
+  >
+    <Icons.Plus
+      size={20}
+      className="text-green-500 group-hover:text-white shrink-0"
+      strokeWidth={3}
+    />
+    <span className="ml-4 text-sm font-semibold">Add a device</span>
+  </a>
+)}
+                      {isExpanded && (
+  <a
+    onClick={handleLogout}
+    className="flex items-center justify-start px-3 py-3 rounded-lg transition-colors text-gray-700 hover:bg-red-500 hover:text-white group cursor-pointer"
+  >
+    <Icons.LogOut
+      size={20}
+      className="text-red-500 group-hover:text-white shrink-0"
+    />
+    <span className="ml-4 text-sm font-semibold">Logout</span>
+  </a>
+)}
+                    </div>
+                    
+                    {/* Expander Button - Remains on the slim edge */}
+                    <button 
+                        onClick={toggleExpand} 
+                        className={`absolute top-4 ${isExpanded ? 'right-2' : '-right-3'} transform p-1 bg-white border border-gray-200 rounded-full shadow-lg text-avanti-blue hover:bg-gray-100 active:scale-90 transition-all z-[51]`}
+                    >
+                        <Icon 
+                            path={isExpanded ? Icons.ChevronLeft({}).props.path : Icons.ChevronRight({}).props.path} 
+                            size={16} 
+                            className="transition-transform duration-300" 
+                        />
+                    </button>
+                </div>
+            );
+        };
+        
+        const WeekNavigator = ({ weekData, onNavigate }) => {
+            const dateRange = getDateRangeString(weekData);
+            const weekIdentifier = getWeekIdentifier(weekData[0].date);
+            
+            return (
+                <div><Card className="p-3 flex items-center justify-between shadow-sm bg-white border-none">
+                    <button 
+                        onClick={() => onNavigate(-7)} 
+                        className="text-gray-400 hover:text-gray-700 active:scale-95 transition-transform p-1"
+                    >
+                        <Icons.ChevronLeft size={20} />
+                    </button>
+                    <div className="text-center">
+                        <p className="text-sm font-bold text-gray-900 leading-tight">{weekIdentifier}</p>
+                        <p className="text-xs text-gray-500">{dateRange}</p>
+                    </div>
+                    <button 
+                        onClick={() => onNavigate(7)} 
+                        className="text-gray-400 hover:text-gray-700 active:scale-95 transition-transform p-1"
+                    >
+                        <Icons.ChevronRight size={20} />
+                    </button>
+
+                </Card>
+<h4 className="flex items-center gap-2 text-4xl font-semibold tracking-tight text-gray-900 mb-5 mt-7">
+  <Icons.Grid size={40} className="text-[#3f72af]" />
+  Dashboard
+</h4></div>
+
+            );
+        };
+
+        
+        // NEW COMBINED CARD: Sales & Financial Reporting (Black/Dark Gradient)
+        const SalesInfoCard = ({ revenue, netSaleRevenue, trend, onClick }) => {
+            const isIncreasing = trend >= 0;
+            const trendText = `${isIncreasing ? '+' : ''}${trend.toFixed(1)}% vs Last Week`;
+            const trendIcon = isIncreasing ? Icons.TrendingUp : Icons.TrendingDown;
+            const trendColor = isIncreasing ? 'text-emerald-300' : 'text-yellow-300';
+            const netColor = isIncreasing ? 'text-emerald-400' : 'text-yellow-300';
+
+            return (
+<div>
+
+
+
+
+                <Card 
+                    className={`p-5 bg-gradient-to-br from-avanti-blue to-indigo-700 text-white shadow-lg border-none flex flex-col justify-between h-56`}
+                    onClick={onClick}
+                >
+
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <h4 className="text-blue-200 text-sm font-bold uppercase tracking-wider">Weekly Sales Summary</h4>
+                            <p className="text-2xl font-extrabold text-white mt-2 mb-1 truncate">
+                                {formatCurrency(revenue)}
+                            </p>
+                            <p className="text-xs text-blue-200">Total Revenue</p>
+                        </div>
+                        <Icons.DollarSign size={32} className="text-blue-300 opacity-80" strokeWidth={2.5} />
+                    </div>
+                    
+                    <div className="pt-3 border-t border-blue-600 space-y-2">
+                         <div className="flex justify-between items-center mb-1">
+                             <p className="text-lg font-bold text-white">Net Revenue</p>
+                             <p className={`text-xl font-black ${netColor}`}>{formatCurrency(netSaleRevenue)}</p>
+                         </div>
+                        <div className="mt-2 flex items-center justify-between">
+                            <p className="text-xs text-blue-300 ">Revenue Trend</p>
+                            <div className="flex items-center">
+                                <trendIcon size={16} className={`inline mr-1 ${trendColor}`} />
+                                <p className={`text-sm font-semibold ${trendColor}`}>
+                                    {trendText}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </Card></div>
+            );
+        };
+        
+        // NEW COMBINED CARD: Inventory & Stock Status (Blue Gradient)
+        const InventoryInfoCard = ({ expectedReturn, totalUnits, totalEmpties, date, onClick }) => (
+
+            <Card 
+                className="p-5 bg-gradient-to-br from-avanti-blue to-indigo-700 text-white shadow-lg border-none flex flex-col justify-between h-56"
+                onClick={onClick}
+            >
+                <div className="flex justify-between items-start">
+                    <div>
+                        <p className="text-blue-200 text-sm font-bold uppercase tracking-wider">Inventory & Stock Status</p>
+                        <h3 className="text-2xl font-extrabold mt-2 mb-1">{formatCurrency(expectedReturn)}</h3>
+                        <p className="text-xs text-blue-200">Expected Return on Current Stock</p>
+                    </div>
+                    <Icons.Package size={32} className="text-blue-300 opacity-80"/>
+                </div>
+                
+                <div className="pt-3 border-t border-blue-600 space-y-2">
+                    <div className="flex justify-between items-center">
+                        <span className="text-sm font-semibold text-white">Total Units in Stock</span>
+                        <span className="text-base font-bold text-white">{formatTotalUnits(totalUnits)}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                        <span className="text-sm font-semibold text-blue-200">Total Empty Bottles</span>
+                        <span className="text-base font-bold text-yellow-300">{formatTotalUnits(totalEmpties)}</span>
+                    </div>
+                    <p className="text-xs text-blue-300 mt-2">Inventory as at {date}</p>
+                </div>
+            </Card>
+        );
+        
+        const WeakReportAlert = () => (
+            <div >
+                
+
+            </div>
+        );
+        
+        // REVISED DoughnutChart (to include comparison)
+        const DoughnutChart = ({ data, labels, title, colors }) => {
+            const chartRef = useRef(null);
+            const chartInstanceRef = useRef(null);
+            
+            // Check if any data exists to prevent chart initialization errors
+            const hasData = data.reduce((sum, v) => sum + v, 0) > 0;
+
+            useEffect(() => {
+                if (chartInstanceRef.current) {
+                    chartInstanceRef.current.destroy();
+                }
+
+                if (!chartRef.current || !hasData) {
+                    return;
+                }
+
+                const ctx = chartRef.current.getContext('2d');
+                chartInstanceRef.current = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: data,
+                            backgroundColor: colors,
+                            borderColor: 'white',
+                            borderWidth: 2,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '70%',
+                        plugins: {
+                            legend: { 
+                                position: 'right',
+                                align: 'center',
+                                labels: {
+                                    usePointStyle: true,
+                                    padding: 15,
+                                    boxWidth: 8,
+                                    font: { size: 12 }
+                                }
+                            },
+                            title: {
+                                display: false, // Title moved to Card header
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: (context) => {
+                                        const value = context.parsed;
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = total > 0 ? (value / total * 100).toFixed(1) : 0;
+                                        return `${context.label}: ${formatCurrency(value)} (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+
+                return () => {
+                    if (chartInstanceRef.current) {
+                        chartInstanceRef.current.destroy();
+                    }
+                };
+            }, [data, labels, colors, hasData]);
+            
+            if (!hasData) {
+                return <div className="h-full flex items-center justify-center text-gray-400 text-sm">No revenue breakdown data.</div>;
+            }
+
+            return (
+                 <div className="relative h-full w-full py-4">
+                    <canvas ref={chartRef} />
+                    {/* Center text shows Total Revenue */}
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none ml-[-120px]">
+                        <span className="text-center text-base font-bold text-gray-700 leading-tight">
+                            Total<br/>
+                            {formatCurrency(data.reduce((a, b) => a + b, 0))}
+                        </span>
+                    </div>
+                </div>
+            );
+        };
+        
+        // BarChart - Added grid lines for better professional look
+        const BarChart = ({ data, labels, title, color }) => {
+            const chartRef = useRef(null);
+            const chartInstanceRef = useRef(null);
+            const hasData = data.reduce((sum, v) => sum + v, 0) > 0;
+
+            useEffect(() => {
+                if (chartInstanceRef.current) {
+                    chartInstanceRef.current.destroy();
+                }
+                
+                if (!chartRef.current || !hasData) {
+                    return;
+                }
+
+                const ctx = chartRef.current.getContext('2d');
+                chartInstanceRef.current = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: title,
+                            data: data,
+                            backgroundColor: color,
+                            borderRadius: 4,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            title: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: (context) => {
+                                        let label = context.dataset.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        label += formatTotalUnits(context.parsed.y) + ' Units';
+                                        return label;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: { 
+                                beginAtZero: true, 
+                                ticks: { callback: (val) => formatTotalUnits(val) },
+                                grid: { color: '#e5e7eb' } // Light grid lines
+                            },
+                            x: { 
+                                grid: { display: false } // No vertical grid lines
+                            }
+                        }
+                    }
+                });
+
+                return () => {
+                    if (chartInstanceRef.current) {
+                        chartInstanceRef.current.destroy();
+                    }
+                };
+            }, [data, labels, title, color, hasData]);
+
+            if (!hasData) {
+                return <div className="h-full flex items-center justify-center text-gray-400 text-sm">No unit sales data this week.</div>;
+            }
+
+            return <div className="relative chart-container w-full"><canvas ref={chartRef} /></div>;
+        };
+        
+        // LineChart - Added grid lines and Avanti blue color
+        const LineChart = ({ dataPoints, labels, title, color = '#3f72af' }) => {
+            const chartRef = useRef(null);
+            const chartInstanceRef = useRef(null);
+            const hasData = dataPoints.reduce((sum, v) => sum + v, 0) > 0;
+
+            useEffect(() => {
+                if (chartInstanceRef.current) {
+                    chartInstanceRef.current.destroy();
+                }
+
+                if (!chartRef.current || !hasData) {
+                    return;
+                }
+                
+                const ctx = chartRef.current.getContext('2d');
+                const gradient = ctx.createLinearGradient(0, 0, 0, 250);
+                gradient.addColorStop(0, `${color}99`);
+                gradient.addColorStop(1, `${color}00`);
+
+                chartInstanceRef.current = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: title,
+                            data: dataPoints,
+                            borderColor: color,
+                            backgroundColor: gradient,
+                            tension: 0.4,
+                            fill: true,
+                            pointRadius: 4,
+                            pointBackgroundColor: color,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            title: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: (context) => {
+                                        let label = context.dataset.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        label += formatCurrency(context.parsed.y);
+                                        return label;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: { 
+                                beginAtZero: true, 
+                                ticks: { 
+                                    callback: (val) => formatCurrency(val).replace('K', '') 
+                                },
+                                grid: { color: '#e5e7eb' } // Light grid lines
+                            },
+                            x: { 
+                                grid: { display: false } // No vertical grid lines
+                            }
+                        }
+                    }
+                });
+
+                return () => {
+                    if (chartInstanceRef.current) {
+                        chartInstanceRef.current.destroy();
+                    }
+                };
+            }, [dataPoints, labels, title, color, hasData]);
+
+            if (!hasData) {
+                return <div className="h-full flex items-center justify-center text-gray-400 text-sm">No financial data for line chart.</div>;
+            }
+
+            return <div className="relative chart-container w-full"><canvas ref={chartRef} /></div>;
+        };
+        
+        // CarouselCard (Kept as is)
+        const CarouselCard = ({ title, value, sub, icon: Icon, colorClass, dateKey, expenseType }) => (
+            <Card className={`flex-none w-60 p-4 rounded-xl border border-gray-200 shadow-sm bg-white transition-transform active:scale-[0.98] ${colorClass}`} onClick={() => alert(`${expenseType || 'Transaction'} Detail:\nTitle: ${title}\nValue: ${value}\nDate: ${formatDateForDisplay(dateKey)}`)}>
+                <div className="flex items-center justify-between mb-2">
+                    <span className="text-[11px] font-medium text-gray-500 uppercase">{expenseType || 'Transaction'}</span>
+                    <Icon size={16} className="text-gray-400" />
+                </div>
+
+                <p className="text-[22px] font-semibold text-gray-900 mb-1 truncate">
+                    {value}
+                </p>
+
+                <p className="text-[13px] text-gray-600 leading-snug line-clamp-2">
+                    {sub}
+                </p>
+            </Card>
+        );
+
+        // --- MAIN DASHBOARD APP ---
+        function AvantiLedgerDashboard() {
+            const [isMenuExpanded, setIsMenuExpanded] = useState(false);
+            const [currentWeekStartDate, setCurrentWeekStartDate] = useState(() => getStartOfWeek(new Date()));
+            
+            const { fullData, isLoading, error, currentWeekData, userDetails } = useDashboardData(currentWeekStartDate);
+            
+            const handleWeekNavigation = useCallback((days) => {
+                setCurrentWeekStartDate(prevDate => {
+                    const newDate = new Date(prevDate);
+                    newDate.setDate(prevDate.getDate() + days);
+                    return newDate;
+                });
+            }, []);
+            
+            const salesData = fullData?.sales;
+            const inventoryData = fullData?.inventory;
+            
+            // --- SALES METRICS ---
+            const currentRevenue = salesData?.currentWeekTotalRevenue || 0;
+            const lastRevenue = salesData?.lastWeekTotalRevenue || 0;
+            const revenueTrend = lastRevenue > 0 ? ((currentRevenue - lastRevenue) / lastRevenue) * 100 : (currentRevenue > 0 ? 100 : 0);
+            
+            const totalExpenses = salesData?.currentWeekMetrics.reduce((sum, d) => sum + d.totalWorkingExpenses, 0) || 0;
+            const totalIncomes = salesData?.currentWeekMetrics.reduce((sum, d) => sum + d.totalIncome, 0) || 0;
+            const netSaleRevenue = currentRevenue - totalExpenses; // Recalculate based on fetched totals
+            
+            // --- INVENTORY METRICS ---
+            const totalStockUnits = inventoryData?.totalStockUnits || 0;
+            const totalExpectedRevenue = inventoryData?.totalExpectedRevenue || 0;
+            const totalEmptiesUnits = inventoryData?.totalEmptiesUnits || 0;
+            const inventoryDate = inventoryData?.inventoryDate || 'N/A';
+
+            // --- CHART DATA GENERATION ---
+            
+            // 1. Revenue Breakdown (Doughnut) - Sales, Income, and Expenses for comparison
+            const goodsSales = Math.max(0, currentRevenue - totalIncomes); // Sales from Goods (Total Revenue - Other Income)
+            
+            // For Doughnut (Part-to-Whole), we use Total Revenue + Total Expenses as the "whole" for a comparative view.
+            // A clearer approach for a Doughnut chart is to break down Total Revenue only.
+            // I will use Total Revenue (Sales + Income) for the chart, but include Net Revenue line chart.
+            const doughnutData = [ goodsSales, totalIncomes, totalExpenses ];
+            const doughnutLabels = ['Total Sales', 'Total Incomes', 'Total Expenses'];
+            const doughnutColors = ['#3498db', '#2ecc71', '#f39c12']; // Dark Blue, Green, Red
+            
+            // 2. Unit Sales (Bar)
+            const top5Products = useMemo(() => {
+                return fullData?.productMetrics
+                    .sort((a, b) => b.units_sold - a.units_sold)
+                    .slice(0, 5) || [];
+            }, [fullData]);
+            
+            const barChartData = top5Products.map(p => p.units_sold);
+            const barChartLabels = top5Products.map(p => p.name.split(' ')[0]); 
+            
+            // 3. Net Revenue (Line)
+            const netRevenueChartData = salesData?.currentWeekMetrics.map(d => d.netSaleRevenue) || [];
+            const netRevenueChartLabels = currentWeekData.map(d => d.day);
+            
+            // 4. Carousels
+            const allTransactions = [
+                ...salesData?.weeklyExpenses.map(e => ({
+                    ...e, type: 'Expense', icon: Icons.CreditCard, colorClass: 'bg-red-50/70',
+                    title: e.description, value: formatCurrency(e.amount), sub: `Recorded on ${formatDateForDisplay(e.dateKey)}`,
+                })) || [],
+                ...salesData?.weeklyIncomes.map(i => ({
+                    ...i, type: 'Income', icon: Icons.DollarSign, colorClass: 'bg-green-50/70',
+                    title: i.description, value: formatCurrency(i.amount), sub: `Recorded on ${formatDateForDisplay(i.dateKey)}`,
+                })) || [],
+            ];
+            
+            const top5Transactions = allTransactions
+                .sort((a, b) => b.amount - a.amount)
+                .slice(0, 5)
+                .map(t => ({
+                    title: t.title,
+                    value: t.value,
+                    sub: t.sub,
+                    icon: t.icon,
+                    colorClass: t.colorClass,
+                    dateKey: t.dateKey,
+                    expenseType: t.type
+                }));
+
+
+            return (
+                <div id="root-container" className="flex w-full h-full">
+                    {/* Menu Backdrop for overlay effect */}
+                    <div 
+                        className={`backdrop ${isMenuExpanded ? 'visible' : ''}`}
+                        onClick={() => setIsMenuExpanded(false)}
+                    ></div>
+
+                    <Sidebar 
+                        isExpanded={isMenuExpanded} 
+                        toggleExpand={() => setIsMenuExpanded(!isMenuExpanded)} 
+                        userDetails={userDetails} 
+                    />
+                    
+                    {/* Main Content Area - Must accommodate the slim menu width (65px) */}
+ <header className="fixed top-0 z-20 bg-avanti-blue shadow-lg h-16 flex items-center justify-between px-4 sm:px-6 shrink-0 min-w-full w-screen ">
+                             {/* Left: Avanti Logo + Dashboard Title */}
+                            <h1 className="text-xl font-black tracking-tight text-white flex items-center">
+                                {/* Avanti Logo at the left of the dashboard header */}
+                                {userDetails.logoUrl ? (
+                                    <img src="https://ik.imagekit.io/3mtmeexff/IMG_8590_E6Ai7mKZx.jpeg?updatedAt=1755383517851" alt="Avanti Logo" className="w-12 h-12 m-[-5px] p-1  fit " />
+                                ) : (
+                                    <div className="w-8 h-8 rounded-full bg-white text-avanti-blue flex items-center justify-center shrink-0 p-1 mr-2">
+                                        <Icons.Zap size={18} />
+                                    </div>
+                                )}
+                                <span>Avanti<span class="text-blue-200">.ledger</span></span>
+                            </h1>
+                            
+                            {/* Right: Menu Expander for mobile/initial state */}
+                            <button 
+                                onClick={() => setIsMenuExpanded(true)} 
+                                className="lg:hidden text-white p-2 rounded-lg hover:bg-avanti-blue/80 active:scale-95 transition-transform"
+                            >
+                                <Icons.Menu size={24} />
+                            </button>
+                        </header>
+                    <div className="main-content flex flex-col max-w-full bg-gray-100 relative">
+                        
+                        {/* Header */}
+                       
+                        
+                        {/* Scrollable Dashboard Body */}
+                        <main className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+                            
+                            {/* Weak Report Highlight */}
+                            <WeakReportAlert />
+                            
+                            {/* Week Navigator */}
+                            <WeekNavigator weekData={currentWeekData} onNavigate={handleWeekNavigation} />
+
+                           {/* Reports Carousel */}
+<div
+  style={{
+    position: "relative",
+    marginLeft: "-16px",
+    marginRight: "-16px",
+    paddingLeft: "16px",
+    paddingRight: "16px",
+  }}
+>
+  <div
+    style={{
+      display: "flex",
+      gap: "24px",
+      overflowX: "auto",
+      scrollSnapType: "x mandatory",
+      scrollBehavior: "smooth",
+      WebkitOverflowScrolling: "touch",
+      scrollbarWidth: "none",
+    }}
+  >
+    
+
+    {/* Inventory Card */}
+    <div
+      style={{
+        minWidth: "100%",
+        scrollSnapAlign: "start",
+        flexShrink: 0,
+      }}
+    >
+      <InventoryInfoCard
+        expectedReturn={totalExpectedRevenue}
+        totalUnits={totalStockUnits}
+        totalEmpties={totalEmptiesUnits}
+        date={inventoryDate}
+        onClick={() => (window.location.href = "inventory-report.html")}
+      />
+    </div>
+{/* Sales Card */}
+    <div
+      style={{
+        minWidth: "100%",
+        scrollSnapAlign: "start",
+        flexShrink: 0,
+      }}
+    >
+      <SalesInfoCard
+        revenue={currentRevenue}
+        netSaleRevenue={netSaleRevenue}
+        trend={revenueTrend}
+        onClick={() => (window.location.href = "sales-report.html")}
+      />
+    </div>
+  </div>
+
+  {/* Static swipe dots */}
+  <div
+    style={{
+      display: "flex",
+      justifyContent: "center",
+      marginTop: "12px",
+      gap: "8px",
+    }}
+  >
+    <div
+      style={{
+        width: "8px",
+        height: "8px",
+        borderRadius: "50%",
+        backgroundColor: "#000", // active dot
+      }}
+    />
+    <div
+      style={{
+        width: "8px",
+        height: "8px",
+        borderRadius: "50%",
+        backgroundColor: "#ccc", // inactive dot
+      }}
+    />
+  </div>
+</div>
+
+  {/* Charts Grid - 3 columns on large screens for professional display */}
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 chart-grid-container">
+                                {/* Weekly Net Sale Revenue Trend (Line Chart) */}
+                                <div className="chart-grid lg:col-span-2">
+                                    <h3 className="text-sm font-bold text-gray-700 mb-4 uppercase tracking-wider border-b pb-2 border-gray-100">Weekly Net Sale Revenue Trend (K)</h3>
+                                    <div className="chart-container">
+                                        <LineChart 
+                                            dataPoints={netRevenueChartData} 
+                                            labels={netRevenueChartLabels} 
+                                            title="Net Revenue"
+                                            color="#3f72af"
+                                        />
+                                    </div>
+                                </div>
+
+{/* Revenue & Expenses Breakdown (Doughnut Chart) */}
+                                <div className="chart-grid">
+                                    <h3 className="text-sm font-bold text-gray-700 mb-4 uppercase tracking-wider border-b pb-2 border-gray-100">Revenue & Expense Sources</h3>
+                                    <div className="chart-container flex items-center justify-center">
+                                        <DoughnutChart 
+                                            data={doughnutData} 
+                                            labels={doughnutLabels} 
+                                            title="Revenue Breakdown"
+                                            colors={doughnutColors}
+                                        />
+                                    </div>
+                                </div>
+           
+                                
+                            
+                          
+                                
+                                                     
+                                {/* Top 5 Products by Units Sold (Bar Chart) - Full width for better visualization */}
+                                <div className="chart-grid lg:col-span-3">
+                                    <h3 className="text-sm font-bold text-gray-700 mb-4 uppercase tracking-wider border-b pb-2 border-gray-100">Top 5 Products by Units Sold</h3>
+                                    <div className="chart-container">
+                                        <BarChart 
+                                            data={barChartData} 
+                                            labels={barChartLabels} 
+                                            title="Units Sold" 
+                                            color="#10b981"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+
+                            
+                            {/* Transactions Carousel (Combined Expenses/Income) */}
+                            <section className="pt-4">
+                                <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider ml-1 mb-3">Top Weekly Transactions (Expenses & Incomes)</h3>
+                                <div className="flex overflow-x-auto no-scrollbar space-x-4 pb-2">
+                                    {top5Transactions.length > 0 ? top5Transactions.map((t, i) => (
+                                        <CarouselCard key={'txn'+i} {...t} />
+                                    )) : <p className="p-4 text-gray-400">No significant transactions recorded this week.</p>}
+                                </div>
+
+                            </section>
+
+                            <div className="h-10"></div> {/* Footer space */}
+                            
+                            {/* Error Display */}
+                            {error && (
+                                <div className="fixed bottom-4 left-4 right-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg shadow-xl z-50">
+                                    <p className="font-bold">Error:</p>
+                                    <p className="text-sm">{error}</p>
+                                </div>
+                            )}
+                            
+                            {/* Loading Overlay */}
+                            {isLoading && (
+                                <div className="absolute inset-0 bg-gray-100/70 backdrop-blur-sm flex items-center justify-center z-50">
+                                    <div className="p-4 bg-white rounded-lg shadow-xl flex items-center">
+                                        <i className="fas fa-spinner fa-spin text-avanti-blue mr-3"></i>
+                                        <p className="text-avanti-blue font-semibold">Loading Dashboard Data...</p>
+                                    </div>
+                                </div>
+                            )}
+
+                        </main>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<AvantiLedgerDashboard />);
+    </script>
+</body>
+</html>

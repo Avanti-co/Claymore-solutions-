@@ -1,0 +1,553 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=0.9, maximum-scale=0.9, user-scalable=no" />
+  <title>Profile — iOS style (Tailwind)</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+
+  
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#3f72af">
+
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("/service-worker.js")
+        .then(reg => console.log("Service worker registered:", reg))
+        .catch(err => console.error("Service worker error:", err));
+    });
+  }
+</script>
+  
+  <style>
+    :root{
+      --card-bg: rgba(255,255,255,0.9);
+      --muted: #6b7280;
+      --accent: #0ea5a4; /* teal-ish */
+      --glass: rgba(255,255,255,0.6);
+    
+            --system-blue: #007AFF;
+            --system-red: #FF3B30;
+            --bg: #F2F2F7;
+            --card: #FFFFFF;
+            --border-color: #E5E5E5;
+            --text-color: #000000;
+            --muted-color: #8E8E93;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+        }
+
+    html,body{
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: linear-gradient(180deg,#f2f6fb 0%, #eef2f7 100%);
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      height:100%;
+      margin-top: 70px;
+    }
+     .header{
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            padding:25px 0px 10px 12px;
+            background:#3f72af;
+            border-bottom:1px solid var(--border-color);
+            position:fixed; top:0; z-index:10;
+            width: 100%;
+        }
+        .header a{
+            color:#a3c9f1;
+            text-decoration:none;
+            font-size:1.0rem;
+            font-weight:500;
+            text-align: left;
+        }
+        .header-title{
+            font-weight:600;
+            font-size:1.1rem;
+            text-align:center;
+            flex:1;
+            color:white;
+            margin-left: -30px;
+        }
+
+    .glass {
+      background: rgba(255,255,255,0.85);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      border-radius:14px;
+      border:1px solid #a3c9f1;
+      padding:10px;
+     
+    }
+    .sep { height:1px; background: lightgray; margin:12px 0; }
+    .ios-btn {
+      background: linear-gradient(180deg, #ffffff, #f7f9fb);
+      border:1px solid rgba(15,23,42,0.06);
+      padding:8px 12px;
+      border-radius:12px;
+      box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset;
+    }
+    
+    /* Carousel Styles */
+    .carousel-container {
+      display: flex;
+      overflow-x: scroll;
+      gap: 12px;
+      padding: 10px 4px;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .carousel-container::-webkit-scrollbar {
+      display: none;
+    }
+    .carousel-card {
+      min-width: 200px;
+      scroll-snap-align: start;
+      cursor: pointer;
+    }
+    /* Styles for the dropdown (kept from original) */
+    .ios-dropdown-container {
+      position: relative;
+      display: inline-block;
+    }
+    .ios-more-button {
+      background-color: transparent;         
+      border: 1px solid transparent; 
+      border-radius: 8px;
+      padding: 5px 10px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.2s;
+    }
+    .ios-more-button:hover {
+      background-color: rgba(0, 122, 255, 0.05);
+    }
+    .ios-more-button .fa-ellipsis-v{
+      font-size: 20px;
+      color: #007AFF;
+    }
+    .ios-dropdown-menu {
+      display: none; 
+      position: absolute;
+      top: 100%; 
+      right: 0; 
+      z-index: 10;
+      background-color: white;
+      min-width: 160px;
+      border-radius: 12px; 
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); 
+      overflow: hidden; 
+      margin-top: 8px; 
+      opacity: 0;
+      transform: translateY(-5px);
+      transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+    }
+    .ios-dropdown-menu.show {
+      display: flex;
+      flex-direction: column;
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .ios-dropdown-menu a {
+      padding: 12px 16px;
+      text-decoration: none;
+      color: black;
+      font-size: 15px;
+      font-family: inherit;
+      border-bottom: 1px solid #eee;
+    }
+    .ios-dropdown-menu a:hover {
+      background-color: #f7f7f7; 
+    }
+    .ios-dropdown-menu a:last-child {
+      border-bottom: none;
+    }
+
+  </style>
+</head>
+<body>
+<div class="header mb-4">
+    <a href="" onclick="history.back(); return false;"><i class="fas fa-chevron-left"></i> Back</a>
+    <div class="header-title text-gray-750">Profile</div>
+    <div style="width:36px;"></div>
+</div>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600&display=swap" rel="stylesheet">
+
+<nav style="
+    position: fixed; 
+    bottom: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 70px; 
+    background: rgba(255, 255, 255, 0.85); 
+    backdrop-filter: blur(20px); 
+    -webkit-backdrop-filter: blur(20px); 
+    border-top: 1px solid rgba(0, 0, 0, 0.05); 
+    display: flex; 
+    justify-content: space-around; 
+    align-items: center; 
+    z-index: 10; 
+    padding-bottom: env(safe-area-inset-bottom);
+    font-family: 'Inter', sans-serif;
+">
+    
+    <a href="dashboard.html" style="display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #64748b; flex: 1; transition: 0.2s;">
+        <svg style="width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2;" viewBox="0 0 24 24">
+            <rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect>
+        </svg>
+        <span style="font-size: 11px; margin-top: 4px; font-weight: 500;">Home</span>
+    </a>
+
+    <a href="inventory.html" style="display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #64748b; flex: 1; position: relative;">
+        
+        
+        <svg style="width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2;" viewBox="0 0 24 24">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+            <line x1="12" y1="22.08" x2="12" y2="12"></line>
+        </svg>
+        <span style="font-size: 11px; margin-top: 4px; font-weight: 500;">Inventory</span>
+    </a>
+
+    <a href="accounting-report.html" style="display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #64748b; flex: 1;">
+        <svg style="width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2;" viewBox="0 0 24 24">
+            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline>
+        </svg>
+        <span style="font-size: 11px; margin-top: 4px; font-weight: 500;">Reports</span>
+    </a>
+
+    <a href="statistics.html" style="display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #64748b; flex: 1;">
+        <svg style="width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2;" viewBox="0 0 24 24">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line>
+        </svg>
+        <span style="font-size: 11px; margin-top: 4px; font-weight: 500;">Stats</span>
+    </a>
+
+    <a href="#" style="display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #3f72af; flex: 1; relative">
+<div style="position: absolute; top: 0; width: 20px; height: 3px; background: #3f72af; border-radius: 0 0 4px 4px;"></div>
+        <svg style="width: 22px; height: 22px; fill: rgba(37, 99, 235, 0.1); stroke: currentColor; stroke-width: 2;" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0-.33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0 .33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+        <span style="font-size: 11px; margin-top: 4px; font-weight: 600;">Settings</span>
+    </a>
+</nav>
+ 
+    <div class="p-4">
+
+      <div class="glass p-6 mb-10 pb-50">   
+
+<div style="display: flex; justify-content: flex-end;">
+<div class="ios-dropdown-container">
+  <button class="ios-more-button" id="moreButton">
+    <i class="fa fa-ellipsis-v"></i>
+  </button>
+  
+  <div class="ios-dropdown-menu" id="dropdownMenu">
+    <a href="edit-profile.html" id="editProfileLink">Edit Profile</a>
+    <a href="manage-devices.html" id="manageDevicesLink">Manage devices</a>
+    <a href="settings.html">Settings</a>
+    <a href="support.html" class="destructive">Report Issue</a>
+  </div>
+</div>
+</div>
+        <div class="flex items-center justify-center">
+          <div class="relative">
+            <div id="profileImageContainer" class="w-28 h-28 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center border border-gray-200 shadow-sm overflow-hidden">
+              <i id="defaultUserIcon" class="fa fa-user text-4xl font-semibold text-gray-600"></i>
+              <img id="profileImage" class="hidden w-full h-full object-cover" alt="Profile Picture">
+            </div>
+            <button class="absolute -bottom-1 -right-1 ios-btn text-xs px-2 py-1" onclick="window.location.href='edit-profile.html';" title="Edit photo">Edit</button>
+          </div>
+        </div>
+
+        <div class="text-center mt-4">
+          <h2 id="accountNameDisplay" class="text-xl font-semibold">Loading...</h2>
+          <p id="contactDisplay" class="text-sm text-gray-500 mt-1">Loading Contact...</p>
+         
+        </div>
+
+        <div class="mt-4 text-center">
+          <p class="text-sm text-[#3f72af]">
+            <span id="descriptionDisplay" contenteditable="true" class="cursor-pointer hover:bg-gray-100 rounded p-1 transition-colors duration-150">
+                Add your profile summary
+            </span> 
+            <i class="fa fa-edit text-gray-400"></i>
+          </p>
+          <p id="descriptionSaveStatus" class="text-xs text-green-500 mt-1 hidden">Description saved!</p>
+        </div>
+
+        <div class="mt-4 flex items-center justify-center gap-6">
+          <div class="text-center">
+            <p id="adminCount" class="text-2xl font-semibold">0</p>
+            <p class="text-xs text-gray-500">Admin device</p>
+          </div>
+          <div class="text-center">
+            <p id="standardCount" class="text-2xl font-semibold">0</p>
+            <p class="text-xs text-gray-500">Standard device</p>
+          </div>
+        </div>
+
+        <div id="syncStatusContainer">
+              <p id="syncStatusDisplay" style="text-align: center; margin-top: 10px;" class="text-sm text-gray-500">Checking Sync...</p>
+        </div>
+
+        <div class="sep text-gray-300"></div>
+
+        <div class="flex flex-col gap-2">
+          <div class="text-center">
+            <p id="authStatusDisplay" class="text-xs text-[#3f72af] mt-1">Status</p>
+          </div>
+          <div class="text-center">
+            <p id="currentProfileDetails" class="text-xs text-gray-500 mt-1">Username · Device name</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class=" mt-[-25px] mb-20">
+        <h3 class="text-lg font-semibold text-gray-700  ml-4">Account Devices</h3>
+        <div id="deviceCarousel" class="carousel-container">
+          <p id="loadingMessage" class="text-gray-500 ml-4">Loading devices...</p>
+        </div>
+      </div>
+    </div>
+
+  <script>
+    // ----------------------------------------------------
+    // 🔥 1. FIREBASE CONFIGURATION (Replace with your own)
+    // ----------------------------------------------------
+    const firebaseConfig = {
+      apiKey: "AIzaSyAw7L6TJtF1W0PwfStEJUC4CebUyMdQU9w",
+  authDomain: "users-66be4.firebaseapp.com",
+  databaseURL: "https://users-66be4-default-rtdb.firebaseio.com",
+  projectId: "users-66be4",
+  storageBucket: "users-66be4.firebasestorage.app",
+  messagingSenderId: "776585122050",
+  appId: "1:776585122050:web:3f452a1f16dc36ee1ef21b",
+  measurementId: "G-ZS8W4BBGD5"
+
+  
+    };
+
+    // Initialize Firebase
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    const db = firebase.database();
+    
+    // ----------------------------------------------------
+    // 2. HELPER FUNCTIONS
+    // ----------------------------------------------------
+    
+    // Convert Unix timestamp (milliseconds) to a readable date format
+    function convertTimestampToDate(timestamp) {
+        if (!timestamp) return 'Unknown Date';
+        const date = new Date(Number(timestamp));
+        return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    }
+
+    // Update the account description in Firebase
+    function saveDescription(accountName, newDescription) {
+        db.ref(`accounts/${accountName}/description`).set(newDescription)
+            .then(() => {
+                const status = document.getElementById('descriptionSaveStatus');
+                status.classList.remove('hidden');
+                setTimeout(() => status.classList.add('hidden'), 2000);
+            })
+            .catch(error => console.error("Error saving description:", error));
+    }
+    
+    // ----------------------------------------------------
+    // 3. MAIN DATA LOADING LOGIC
+    // ----------------------------------------------------
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- A. GET LOCAL STORAGE DATA ---
+        const accountName = localStorage.getItem('AV_ledger_account_key') || 'Guest Account';
+        const username = localStorage.getItem('AV_ledger_username') || 'guest_user';
+        const authStatus = localStorage.getItem('AV_ledger_auth_status') || 'standard';
+
+        // --- B. UPDATE STATIC LOCAL DATA ---
+        
+        document.getElementById('authStatusDisplay').textContent = authStatus.toUpperCase() + ' DEVICE';
+
+        // --- C. FIREBASE FETCH ---
+        if (accountName && accountName !== 'Guest Account') {
+            // Reference to the specific account node
+            const accountRef = db.ref(`accounts/${accountName}`);
+
+            // --- 1. Account Details Listener ---
+            accountRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (!data) {
+                  console.warn(`Account data not found for ${accountName}`);
+                  return;
+                }
+                
+                // --- Description ---
+                const accountDisplay = document.getElementById('accountNameDisplay');
+const accountName = data.displayName || 'Account Name';
+accountDisplay.textContent = accountName;
+ const descriptionDisplay = document.getElementById('descriptionDisplay');
+                const description = data.description || 'Add your profile summary';
+                descriptionDisplay.textContent = description;
+                descriptionDisplay.addEventListener('blur', (e) => {
+                    const newDesc = e.target.textContent.trim();
+                    if (newDesc !== description && newDesc !== 'Add your profile summary') {
+                        saveDescription(accountName, newDesc);
+                    }
+                });
+                
+                // --- Profiles/Authorization Count ---
+                const profiles = data.profiles || {};
+                let adminCount = 0;
+                let standardCount = 0;
+                let allProfiles = [];
+
+                // Iterate over all profile keys (which are the usernames)
+                for (const [profileUsername, profileData] of Object.entries(profiles)) {
+                    allProfiles.push({ username: profileUsername, ...profileData });
+                    
+                    const status = profileData.authStatus ? profileData.authStatus.toLowerCase() : 'standard';
+                    
+                    if (status === 'admin') {
+                        adminCount++;
+                    } else if (status === 'standard') {
+                        standardCount++;
+                    }
+                }
+
+                document.getElementById('adminCount').textContent = adminCount;
+                document.getElementById('standardCount').textContent = standardCount;
+                const totalProfiles = adminCount + standardCount;
+
+                // --- Sync Status ---
+                const syncStatusDisplay = document.getElementById('syncStatusDisplay');
+                const syncStatusContainer = document.getElementById('syncStatusContainer');
+                
+                if (totalProfiles <= 1) {
+                    // Hide if only one profile
+                    syncStatusContainer.style.display = 'none';
+                } else {
+                    syncStatusContainer.style.display = 'block';
+                    // Check under the 'settings' node for synchronization value
+                    const synchronizationSetting = data.settings && data.settings.synchronization ? data.settings.synchronization.toLowerCase() : 'none';
+                    
+                    if (synchronizationSetting === 'all') {
+                        syncStatusDisplay.textContent = 'Data syncing with all devices';
+                        syncStatusDisplay.className = 'text-sm text-green-600 mt-2 text-center';
+                    } else {
+                        syncStatusDisplay.textContent = 'Data not syncing with all devices';
+                        syncStatusDisplay.className = 'text-sm text-gray-500 mt-2 text-center';
+                    }
+                }
+                
+                // --- Profile Image ---
+                const profileImage = document.getElementById('profileImage');
+                const defaultUserIcon = document.getElementById('defaultUserIcon');
+                // The URL is assumed to be directly under the account name node
+                const profileUrl = data.url; 
+                
+                if (profileUrl) {
+                    profileImage.src = profileUrl;
+                    profileImage.classList.remove('hidden');
+                    defaultUserIcon.classList.add('hidden');
+                } else {
+                    profileImage.classList.add('hidden');
+                    defaultUserIcon.classList.remove('hidden');
+                }
+
+
+                // --- Current Profile Contact and Device ---
+                const currentProfileData = profiles[username];
+                if (currentProfileData) {
+                    // Device Name
+                    const deviceName = currentProfileData.deviceName || 'No Device Name';
+                    document.getElementById('currentProfileDetails').textContent = `${username} · ${deviceName}`;
+                    
+                    // Contact (Email or Phone)
+                    // The contact details are assumed to be directly under the account node
+                    const contactDisplay = document.getElementById('contactDisplay');
+                    const email = data.email || '';
+                    const phone = data.phone || '';
+                    
+                    if (email.endsWith('@phone.avanti')) {
+                        // Display the phone number stored in the 'phone' field
+                        contactDisplay.textContent = phone || 'Phone not set'; 
+                    } else {
+                        // Display the email
+                        contactDisplay.textContent = email || 'Email not set';
+                    }
+
+                } else {
+                    document.getElementById('currentProfileDetails').textContent = `${username} · Profile Not Found`;
+                }
+
+                // --- Device Carousel ---
+                const carousel = document.getElementById('deviceCarousel');
+                carousel.innerHTML = ''; 
+
+                if (allProfiles.length === 0) {
+                    carousel.innerHTML = '<p class="text-gray-500 ml-4">No devices found for this account.</p>';
+                } else {
+                    allProfiles.forEach(profile => {
+                        const dateCreated = convertTimestampToDate(profile.createdAt); // Use createdAt from the profile
+                        const profileStatus = profile.authStatus ? profile.authStatus.toLowerCase() : 'standard';
+                        
+                        const card = document.createElement('div');
+                        card.className = 'carousel-card glass p-4 shadow-md';
+                        card.setAttribute('onclick', "window.location.href='manage-devices.html'"); 
+                        
+                        card.innerHTML = `
+                            <p class="text-sm font-semibold">${profile.username}</p>
+                            <p class="text-xs text-gray-500 mt-1">Status: <span class="font-medium ${profileStatus === 'admin' ? 'text-red-500' : 'text-blue-500'}">${profileStatus.toUpperCase()}</span></p>
+                            <p class="text-xs text-gray-500">Device: ${profile.deviceName || 'Unknown'}</p>
+                            <p class="text-xs text-gray-400 mt-2">Added: ${dateCreated}</p>
+                        `;
+                        carousel.appendChild(card);
+                    });
+                }
+            });
+
+        } else {
+            console.error("Account Name not found in Local Storage. Cannot fetch Firebase data.");
+        }
+
+
+        // --- D. DROPDOWN LOGIC ---
+        const button = document.getElementById('moreButton');
+        const menu = document.getElementById('dropdownMenu');
+        
+        button.addEventListener('click', (event) => {
+          menu.classList.toggle('show');
+          event.stopPropagation();
+        });
+        document.addEventListener('click', (event) => {
+          if (!button.contains(event.target) && !menu.contains(event.target)) {
+            if (menu.classList.contains('show')) {
+              menu.classList.remove('show');
+            }
+          }
+        });
+        menu.querySelectorAll('a').forEach(item => {
+          item.addEventListener('click', () => {
+            // Note: Menu closes on click, actual navigation handled by href
+            menu.classList.remove('show');
+          });
+        });
+    });
+</script>
+
+</body>
+</html>

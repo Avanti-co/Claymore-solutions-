@@ -1,0 +1,1897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=0.7, maximum-scale=0.7, user-scalable=no" />
+<title>Statistics - Avanti Ledger</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+
+<!-- Firebase SDKs (place before the script below) -->
+<script src="https://cdn.tailwindcss.com/"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#3f72af">
+
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("/service-worker.js")
+        .then(reg => console.log("Service worker registered:", reg))
+        .catch(err => console.error("Service worker error:", err));
+    });
+  }
+</script>
+<style>
+  /*
+  iOS Style Guide:
+  - System Blue: #007AFF
+  - Background: #F2F2F7 (light gray/off-white)
+  - Card/List Background: #FFFFFF
+  - Fonts: SF Pro/System font
+  - Flat buttons, thick headers.
+  */
+  :root{
+    --system-blue: #007AFF;
+    --system-red: #FF3B30;
+    --bg: #F2F2F7;
+    --card: #FFFFFF;
+    --border-color: #E5E5E5;
+    --text-color: #3f72af;
+    --muted-color: #8E8E93;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  }
+  html,body{
+    height:100%;
+    margin:0;
+    background:var(--bg);
+    color:var(--text-color);
+    margin-top: 50px;
+    padding-bottom: 200px;
+    padding-top: 25px;
+    margin-bottom: 100px;
+  }
+  .container{
+    max-width:450px;
+    margin:0 auto;
+    background:var(--bg);
+    min-height:100vh;
+    padding:0; /* Padding moves to inner elements */
+    box-sizing:border-box;
+  }
+  /* Header - Tall Navigation Bar Style */
+  .header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:30px 16px 17px;
+    background:#3f72af; /* White header background */
+    border-bottom:1px solid var(--border-color);
+    position:fixed; top:0; z-index:10;
+ width: 100%;
+  }
+  .header a{
+    color:#a3c9f1;
+    text-decoration:none;
+    font-size:1.4rem;
+    font-weight:500;
+    text-align: left;
+
+  }
+  .header-title{
+    font-weight:550; /* Bold title */
+    font-size:1.6rem;
+    text-align:center;
+    flex:1;
+    color: white;
+    margin-left: 38%;
+position: fixed;
+  }
+  /* Date nav */
+  .date-nav-row{
+    display:flex;
+    gap:8px;
+    align-items:center;
+    margin:12px 16px; /* Padding applied here */
+  }
+  .date-nav-pill{
+    display:flex;
+    flex:1;
+    align-items:center;
+    border:1px solid var(--border-color);
+    border-radius:10px; /* More standard iOS rounding */
+    overflow:hidden;
+    background:var(--card);
+border: 1px solid #d1d5db;
+  }
+  .date-nav-btn{
+    padding:8px 12px;
+    border:0;
+    background:#3f72af;
+    cursor:pointer;
+    font-size:1.5rem;
+    color:white;
+    font-weight:400;
+    margin: 0;
+
+  }
+  .date-display{
+    flex:1;
+    text-align:center;
+    padding:8px 6px;
+    font-weight:700;
+    color:var(--text-color);
+  }
+  .more-btn{
+    width:45px;
+    height:45px;
+    border-radius:10px;
+    border:1px solid var(--border-color);
+    display:flex;
+    font-size: 1.3;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    background:var(--card);
+    position:relative;
+    box-shadow:none; /* No shadow for iOS style */
+border: 1px solid #d1d5db;
+  }
+  .more-btn .dropdown{
+    position:absolute;
+    top:65px;
+    right:0;
+    background:var(--card);
+    border:1px solid var(--border-color);
+    border-radius:10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.15); /* Light, subtle iOS shadow for popovers */
+    display:none;
+    min-width:140px;
+    z-index:30;
+    overflow:hidden;
+transform: scale(1.2);
+  }
+  .more-btn .dropdown.active{ display:block; }
+  .more-btn .dropdown div{
+    padding:10px 12px;
+    cursor:pointer;
+    font-size:1rem;
+    color:var(--text-color);
+    border-bottom:1px solid var(--border-color);
+
+    
+  }
+  .more-btn .dropdown div:last-child { border-bottom: none; }
+  .search-pill{
+    display:flex;
+    border:0; /* Integrated into background, not explicit border */
+    border-radius:10px;
+    overflow:hidden;
+    margin:0 16px 12px 16px;
+    background:#EAEAEA; /* Search field background is slightly darker than BG */
+  width: 91vw;
+  padding-top: 00.3rem;
+  padding-bottom: 00.3rem;
+  
+  padding-right: 1rem;
+  font-size: 1rem;
+  border-radius: 0.5rem;
+  border-width: 1px;
+  border-color: #d1d5db;
+  background-color: #ffffff;
+border: 1px solid #d1d5db;
+  }
+  .search-pill input{
+    flex:1;
+    border:0;
+    padding:8px 12px;
+    outline:none;
+    background:none;
+    font-size:1rem;
+
+  }
+  .search-pill button{
+    border:0;
+    background:none;
+    padding:8px 12px;
+    cursor:pointer;
+    color:var(--muted-color);
+  }
+
+  /* Table Container */
+  .stats-table-container{
+    overflow:auto;
+    margin:0 0 16px 0;
+    padding:0 16px; /* Apply horizontal padding */
+  }
+  table.stats-table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:0.84rem;
+    
+    border:1px solid var(--border-color);
+    border-radius:10px;
+    overflow:hidden; /* Needed to respect table border-radius */
+  }
+  table.stats-table th, table.stats-table td{
+    border:none; /* Remove cell borders */
+    padding:8px;
+    text-align:center;
+    vertical-align:middle;
+  }
+  table.stats-table tbody tr:not(:last-child) td {
+    border-bottom: 1px solid var(--border-color);
+  }
+  table.stats-table thead th {
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  table.stats-table th{
+    background:var(--card); /* White header background */
+    font-size:0.78rem;
+    font-weight:600;
+    color: #3f72af;
+  }
+  td.editable{ cursor:text; background:#F9F9F9; }
+  td[data-col="orders"]{ cursor:pointer; color:var(--system-blue); }
+  .select-col{ width:36px; }
+  .hidden{ display:none !important; }
+
+  /* Controls */
+
+  .btn{
+    background:#3f72af;
+    color:#fff;
+    border:0;
+    padding:10px 14px;
+    border-radius:10px;
+    cursor:pointer;
+    font-weight:600;
+    box-shadow:none;
+  }
+  .small-btn{
+    background:#3f72af;
+    color:#fff;
+    border:0;
+    padding:8px 12px;
+    border-radius:10px;
+    cursor:pointer;
+    font-weight:600;
+    box-shadow:none;
+  }
+
+  /* Switch */
+  .balancing-switch-group{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:0.9rem;
+    color:var(--muted-color);
+  }
+  .switch{ position:relative; width:48px; height:28px; }
+  .switch input{ display:none; }
+  .slider{ position:absolute; inset:0; background:#E9E9EA; border-radius:30px; transition:all .2s; }
+  .slider:before{ content:""; position:absolute; left:2px; top:2px; width:24px; height:24px; background:#fff; border-radius:50%; transition:all .2s; }
+  .switch input:checked + .slider{ background:var(--system-blue); } /* System Blue when checked */
+  .switch input:checked + .slider:before{ transform:translateX(20px); }
+
+  /* Finance & Totals - Grouped List Style */
+  .section-container {
+    margin: 0 16px 16px 16px;
+    padding: 0;
+  }
+  .financial-summary, .totals-section{
+    border:1px solid var(--border-color);
+    padding:0;
+    border-radius:10px;
+    margin-bottom:16px;
+    background:var(--card);
+    box-shadow:none;
+  }
+  .finance-grid{ display:flex; gap:0; }
+  .expenses-section, .incomes-section{ flex:1; padding:12px; }
+  .finance-divider{ width:1px; background:var(--border-color); }
+  .finance-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin:0 0 8px 0;
+    font-weight:600;
+    color:#3f72af;
+    font-size:0.95rem;
+    padding-bottom:8px;
+    border-bottom:1px solid var(--border-color);
+
+  }
+  .finance-item{
+    display:flex;
+    gap: 7px;
+    align-items:center;
+    padding:5px 0;
+    border-bottom:1px solid var(--border-color);
+text-align: left;
+  }
+  .finance-item:last-child { border-bottom: none; }
+  .finance-amount{ font-weight:500; font-size:1rem; color:var(--text-color); }
+  .finance-description{ font-size:0.85rem; color:var(--muted-color); }
+
+  /* Totals */
+  .totals-section{ padding:0; }
+  .totals-section h3{
+    margin:0;
+    padding:12px 16px;
+    border-bottom:1px solid var(--border-color);
+    font-size:1.05rem;
+    font-weight:600;
+    color:var(--text-color);
+  }
+  .total-item{
+    display:flex;
+    justify-content:space-between;
+    padding:12px 16px;
+    color:var(--text-color);
+    
+  }
+  .total-item:last-child { border-bottom: none; }
+  .total-item span:last-child {
+    font-weight: 500;
+    ;
+  }
+  .total-item:last-child span:last-child {
+    color: var(--system-blue); /* Highlighting Sale Revenue */
+    font-weight: 600;
+  }
+
+  .generate-reports{
+    display:block;
+    text-align:center;
+    padding:12px 16px;
+    color:var(--system-blue);
+    font-weight:600;
+    text-decoration:none;
+    border-top:1px solid var(--border-color);
+  }
+
+  /* Modal */
+  .modal{ display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); align-items:center; justify-content:center; z-index:80; }
+  .modal.show{ display:flex; }
+  .modal-content{
+    width:90%;
+    max-width:360px;
+    background:var(--card);
+    padding:16px;
+    border-radius:14px; /* Distinctly rounded */
+    box-shadow:none;
+  }
+  .close-btn{ float:right; font-size:24px; cursor:pointer; color:var(--muted-color); }
+  .modal-row{ margin-bottom:12px; }
+  .modal-row label {
+    display: block;
+    font-weight: 400;
+    margin-bottom: 4px;
+    color: var(--muted-color);
+  }
+  .modal-content input[type="number"] {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 1rem;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .modal-content .btn {
+    background: var(--system-blue);
+    font-weight:600;
+  }
+
+  @media (min-width:520px){
+    .container{
+      margin:18px auto;
+      border-radius:14px;
+      overflow:hidden;
+      min-height:auto;
+      box-shadow: 0 4px 12px rgba(0,0,0,.08);
+    }
+  }
+</style>
+</head>
+<body>
+
+    <div class="header">
+      <a href="#" onclick="history.back(); return false;" title="Go back"><i class="fas fa-chevron-left"></i> Back</a>
+      <div class="header-title ">Statistics</div>
+       <span id="sync" style="
+        display: inline-block;
+        background-color: rgba(255, 255, 255, 0.2);
+        color: #ffffff;
+        padding: 6px 20px;
+        border-radius: 50px;
+        font-family: system-ui, sans-serif;
+        font-size: 14px;
+        font-weight: 500;
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        letter-spacing: 0.5px;
+    ">
+        SYNCING
+    </span>
+    </div>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600&display=swap" rel="stylesheet">
+
+<nav style="
+    position: fixed; 
+    bottom: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 90px; 
+    background: rgba(255, 255, 255, 0.85); 
+    backdrop-filter: blur(20px); 
+    -webkit-backdrop-filter: blur(20px); 
+    border-top: 1px solid rgba(0, 0, 0, 0.05); 
+    display: flex; 
+    justify-content: space-around; 
+    align-items: center; 
+    z-index: 10; 
+    padding-bottom: env(safe-area-inset-bottom);
+    font-family: 'Inter', sans-serif;
+">
+    
+    <a href="dashboard.html" style="display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #64748b; flex: 1; transition: 0.2s; transform: scale(1.3);">
+        <svg style="width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2;" viewBox="0 0 24 24">
+            <rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect>
+        </svg>
+        <span style="font-size: 11px; margin-top: 4px; font-weight: 500;">Home</span>
+    </a>
+
+    <a href="inventory.html" style="display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #64748b; flex: 1; position: relative; transform: scale(1.3);">
+       
+        
+        <svg style="width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2;" viewBox="0 0 24 24">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+            <line x1="12" y1="22.08" x2="12" y2="12"></line>
+        </svg>
+        <span style="font-size: 11px; margin-top: 4px; font-weight: 600;">Inventory</span>
+    </a>
+
+    <a href="accounting-report.html" style="display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #64748b; flex: 1; transform: scale(1.3);">
+        <svg style="width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2;" viewBox="0 0 24 24">
+            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline>
+        </svg>
+        <span style="font-size: 11px; margin-top: 4px; font-weight: 500;">Reports</span>
+    </a>
+
+    <a href="statistics.html" style="display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #3f72af; flex: 1; transform: scale(1.3); position: relative;">
+ <div style="position: absolute; top: -14px; width: 20px; height: 3px; background: #3f72af; border-radius: 0 0 4px 4px;"></div>
+        <svg style="width: 22px; height: 22px; fill: rgba(37, 99, 235, 0.1); stroke: currentColor; stroke-width: 2;" viewBox="0 0 24 24">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line>
+        </svg>
+        <span style="font-size: 11px; margin-top: 4px; font-weight: 500;">Stats</span>
+    </a>
+
+    <a href="settings.html" style="display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #64748b; flex: 1; transform: scale(1.3);">
+        <svg style="width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2;" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0-.33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0 .33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+        <span style="font-size: 11px; margin-top: 4px; font-weight: 500;">Settings</span>
+    </a>
+</nav>
+
+
+    <div class="date-nav-row" >
+      <div class="date-nav-pill" id="dateNavPill">
+        <button class="date-nav-btn" id="prevDateBtn" title="Previous date"><i class="fas fa-chevron-left"></i></button>
+        <div class="date-display" id="dateDisplay"></div>
+        <button class="date-nav-btn" id="nextDateBtn" title="Next date"><i class="fas fa-chevron-right"></i></button>
+      </div>
+
+      <div class="more-btn" id="moreBtn" title="More">
+        <i class="fas fa-ellipsis-h" id="moreIcon"></i>
+        <div class="dropdown" id="moreDropdown">
+          <div onclick="enterSelectMode()">Select</div>
+          <div onclick="window.locate='accounting-report.html'">Open reports</div>
+          <div onclick="window.locate='notes.html'">Notes</div>
+        </div>
+      </div>
+    </div>
+
+        <div class="px-2 mb-6 m-2">
+        <div class="relative">
+            <input type="text" id="searchItemInput" placeholder="Search Settings" class="w-full py-3 pl-10 pr-4 text-base rounded-lg border border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white" onkeyup="filterSettings()" />
+            <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+        </div>
+    </div>
+
+    <div class="stats-table-container">
+
+
+      <table class="stats-table" id="statisticsTable">
+        <thead>
+          <tr >
+            <th class="select-col hidden"></th>
+            <th >Item</th>
+            <th>Opening Stock</th>
+            <th>Orders</th>
+            <th>Total Stock</th>
+            <th>Price</th>
+            <th>Closing Stock</th>
+            <th>Sales</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody id="statsTableBody"></tbody>
+        <tfoot >
+          <tr style="background:#F9F9F9;">
+            <th  style="border-top:1px solid var(--border-color);"> <button class="btn" onclick="addRow()" title="Add new item"><i class="fas fa-plus"></i></button></th>
+ <th class="table-controls" colspan="5" style="border-top:1px solid var(--border-color);">  <div class="balancing-switch-group">
+        <span>done balancing</span>
+        <label class="switch">
+          <input type="checkbox" id="doneBalancingSwitch" onchange="saveBalancingStatus()">
+          <span class="slider"></span>
+        </label>
+      </div></th>
+            <th style="border-top:1px solid var(--border-color); color:var(--text-color);">Total Sales:</th>
+            <th id="totalSalesAmount" style="border-top:1px solid var(--border-color); font-weight:600; color:var(--system-blue);">K0</th>
+          </tr>
+        </tfoot>
+      </table>
+
+
+   
+
+
+    </div>
+
+
+   
+    <div class="section-container">
+        <div class="financial-summary">
+          <div class="finance-grid">
+            <div class="expenses-section">
+              <div class="finance-header">
+                <span>Expenses</span>
+                <div class="edit-btn1" id="edit-btn"><button class="small-btn" id="addExpenseBtn" onclick="addExpense()" title="Add Expense"><i class="fas fa-plus"></i></button></div>
+              </div>
+              <div id="expensesList">
+              
+              </div>
+            </div>
+
+            <div class="finance-divider"></div>
+
+            <div class="incomes-section">
+              <div class="finance-header">
+                <span>Incomes</span>
+                <div class="edit-btn1" id="edit-btn-inc"><button class="small-btn" id="addIncomeBtn" onclick="addIncome()" title="Add Income"><i class="fas fa-plus"></i></button></div>
+              </div>
+              <div id="incomesList">
+               
+              </div>
+            </div>
+          </div>
+        </div>
+    </div>
+<style>
+
+</style>
+
+   <div class="section-container mb-20" style="padding-bottom: 120px;">
+    
+    <div class="totals-section" style="width: 100%; background: #ffffff; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); border: 1px solid rgba(0,0,0,0.05); overflow: hidden;">
+        
+        <h3 style="margin: 0; padding: 20px 24px; background: #ffffff; border-bottom: 1px solid #eeeeee; font-size: 1rem; font-weight: 900; color: #3f72af; text-transform: uppercase; letter-spacing: 1px;">
+            Summary
+        </h3>
+
+        <div style="padding: 8px 0;">
+            <div class="total-item" style="display: flex; justify-content: space-between; padding: 12px 24px; color: #3f72af;">
+                <span>Net Sales</span>
+                <span id="netSalesAmount" style="font-weight: 600; color: #3f72af;">K0</span>
+            </div>
+            
+            <div class="total-item" style="display: flex; justify-content: space-between; padding: 12px 24px; color: #3f72af;">
+                <span>Net Income</span>
+                <span id="netIncomeAmount" style="font-weight: 600; color: #3f72af;">K0</span>
+            </div>
+            
+            <div class="total-item" style="display: flex; justify-content: space-between; padding: 12px 24px; color: #3f72af;">
+                <span>Net Expenses</span>
+                <span id="netExpensesAmount" style="font-weight: 600; color: #3f72af;">K0</span>
+            </div>
+
+            <div class="total-item" style="display: flex; justify-content: space-between; padding: 16px 24px; margin-top: 8px; background-color: rgba(63, 114, 175, 0.04); border-top: 1px solid rgba(63, 114, 175, 0.1); border-bottom: 1px solid rgba(63, 114, 175, 0.1);">
+                <span style="font-weight: 700; color: #3f72af;">Sale Revenue</span>
+                <span id="saleRevenueAmount" style="font-weight: 800; color: #3f72af; font-size: 1.15rem;">K0</span>
+            </div>
+        </div>
+
+        <a href="accounting-report.html" class="generate-reports" style="display: block; text-align: center; padding: 18px; background-color: #3f72af; color: #ffffff; font-weight: 600; text-decoration: none; font-size: 0.95rem; transition: background 0.3s;">
+            Generate Reports
+        </a>
+        
+    </div>
+<div class="section-container mb-100"></div>
+</div>
+
+
+    <div class="modal" id="ordersModal" role="dialog" aria-modal="true">
+      <div class="modal-content"> <h3 style="font-size:1.1rem; color:var(--text-color);">Orders</h3>
+       
+        <div class="modal-row" style="margin-top:12px;">
+          <div>Item: <span id="modalItemName" style="font-weight:600;"></span></div>
+        </div>
+        <div class="modal-row">
+          <label for="orderQuantity">Quantity</label>
+          <input type="number" id="orderQuantity" style="width:100%; padding:8px;" min="0" value="0">
+        </div>
+        <div class="modal-row">
+          <label for="costPrice">Cost Price / unit</label>
+          <input type="number" id="costPrice" style="width:100%; padding:8px;" min="0" value="0">
+        </div>
+        <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:20px;">
+          <button class="small-btn" onclick="closeOrdersModal()" style="color:var(--system-red); border-color:var(--system-red); background:none;">Cancel</button>
+          <button class="btn" onclick="saveOrders()">Save Orders</button>
+        </div>
+        <div style="font-size:0.8rem; color:var(--muted-color); margin-top:12px; text-align:center;">
+          FIFO batches for the item are stored (viewed in console).
+        </div>
+      </div>
+    </div>
+
+  </div>
+<!-- Expense Modal -->
+<div id="expenseModal" class="modal">
+  <div class="modal-content">
+    <h3>Add Expense</h3>
+    <label>Description</label>
+    <input id="expenseDesc" type="text" />
+    <label>Amount</label>
+    <input id="expenseAmt" type="number" min="0" />
+    <div class="modal-actions">
+      <button onclick="closeExpenseModal()">Cancel</button>
+      <button onclick="saveExpenseFromModal()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Income Modal -->
+<div id="incomeModal" class="modal">
+  <div class="modal-content">
+    <h3>Add Income</h3>
+    <label>Description</label>
+    <input id="incomeDesc" type="text" />
+    <label>Amount</label>
+    <input id="incomeAmt" type="number" min="0" />
+    <div class="modal-actions">
+      <button onclick="closeIncomeModal()">Cancel</button>
+      <button onclick="saveIncomeFromModal()">Save</button>
+    </div>
+  </div>
+</div>
+
+<style>
+/* ----------------------------------- */
+/* 1. Modal Container and Positioning */
+/* ----------------------------------- */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.35);
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.35s cubic-bezier(0.32, 0.72, 0, 1), visibility 0s 0.35s;
+    z-index: 2000;
+
+    display: flex;
+    align-items: flex-end; /* bottom-aligned */
+    justify-content: center;
+    backdrop-filter: blur(5px); /* subtle iOS blur */
+}
+
+.modal.show {
+    visibility: visible;
+    opacity: 1;
+    transition: opacity 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* ----------------------------------- */
+/* 2. Modal Content (iOS Slide-Up Sheet) */
+/* ----------------------------------- */
+.modal-content {
+    width: 100%;
+    max-width: 100%;
+    position: relative;
+    bottom: 0;
+    height: 50vh;
+    box-sizing: border-box;
+    padding: 20px 25px 30px;
+    background-color: #f9f9f9;
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    transform: translateY(100%);
+    transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #000;
+    box-shadow: 0 -3px 15px rgba(0,0,0,0.12); /* subtle floating shadow */
+}
+
+/* Grab indicator (iOS handle) */
+.modal-content::before {
+    content: "";
+    display: block;
+    width: 40px;
+    height: 4px;
+    background: #c7c7cc;
+    border-radius: 2px;
+    margin: 6px auto 12px auto;
+}
+
+/* Slide in */
+.modal.show .modal-content {
+    transform: translateY(0);
+}
+
+/* ----------------------------------- */
+/* 3. Inner Elements Styling (iOS Look) */
+/* ----------------------------------- */
+
+/* Header */
+.modal-content h3 {
+    text-align: center;
+    font-size: 1.25em;
+    font-weight: 600;
+    margin: 0 0 25px 0;
+    padding-bottom: 10px;
+    border-bottom: 0.5px solid #d1d1d6;
+}
+
+/* Labels */
+.modal-content label {
+    display: block;
+    font-size: 0.9em;
+    color: #8e8e93;
+    margin-top: 15px;
+    margin-bottom: 5px;
+    font-weight: 500;
+}
+
+/* Inputs */
+.modal-content input[type="text"],
+.modal-content input[type="number"],
+.modal-content textarea {
+    width: 100%;
+    padding: 12px 14px;
+    box-sizing: border-box;
+    border: 1px solid #e5e5ea;
+    border-radius: 12px;
+    font-size: 1em;
+    color: #000;
+    background-color: #fff;
+    -webkit-appearance: none;
+    outline: none;
+    transition: border-color 0.25s;
+}
+
+.modal-content input:focus,
+.modal-content textarea:focus {
+    border-color: #007aff;
+}
+
+/* Action Buttons Container */
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 30px;
+}
+
+/* Buttons */
+.modal-actions button {
+    padding: 10px 16px;
+    border-radius: 12px;
+    font-size: 1em;
+    cursor: pointer;
+    font-weight: 600;
+    min-width: 80px;
+    transition: background 0.25s, color 0.25s, border 0.25s;
+}
+
+/* Cancel Button */
+.modal-actions button:first-child {
+    background: none;
+    border: 1px solid #007aff;
+    color: #007aff;
+}
+
+.modal-actions button:first-child:hover {
+    background: rgba(0, 122, 255, 0.1);
+}
+
+/* Save Button */
+.modal-actions button:last-child {
+    background-color: #007aff;
+    border: 1px solid #007aff;
+    color: white;
+}
+
+.modal-actions button:last-child:hover {
+    background-color: #005ecb;
+}
+</style>
+
+
+<script>
+/* =======================================================
+    Avanti Ledger - FINAL CODE: REAL-TIME SYNC & ADMIN PRIORITY
+    - Uses on('value') for real-time collaborative editing.
+    - Determines sync source based on Admin status if multiple sync targets exist.
+    - Halts deletion and propagation for days marked 'balanced'.
+    ======================================================= */
+
+/* ---------- Config / Firebase ---------- */
+const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyAw7L6TJtF1W0PwfStEJUC4CebUyMdQU9w",
+    authDomain: "users-66be4.firebaseapp.com",
+    databaseURL: "https://users-66be4-default-rtdb.firebaseio.com",
+    projectId: "users-66be4",
+    storageBucket: "users-66be4.firebasestorage.app",
+    messagingSenderId: "776585122050",
+    appId: "1:776585122050:web:3f452a1f16dc36ee1ef21b",
+    measurementId: "G-ZS8W4BBGD5"
+};
+
+let firebaseApp = null;
+let firebaseDB = null; // This will hold the firebase.database() reference
+let isOnline = navigator.onLine;
+
+if (FIREBASE_CONFIG) {
+    try {
+        // Ensure firebase library is loaded before this script runs
+        if (typeof firebase !== 'undefined') {
+            if (!firebase.apps.length) {
+                firebaseApp = firebase.initializeApp(FIREBASE_CONFIG);
+            } else {
+                firebaseApp = firebase.app();
+            }
+            firebaseDB = firebase.database();
+        } else {
+            console.error('Firebase library is not loaded.');
+        }
+    } catch (e) {
+        console.warn('Firebase init failed', e);
+    }
+}
+
+window.addEventListener('online', () => { isOnline = true; console.log('online'); });
+window.addEventListener('offline', () => { isOnline = false; console.log('offline'); });
+
+/* ---------- User Context & Paths (Dynamically Updated) ---------- */
+let AV_LEDGER_ACCOUNT_KEY = localStorage.getItem('AV_ledger_account_key');
+let AV_LEDGER_USERNAME = localStorage.getItem('AV_ledger_username');
+const DEFAULT_FALLBACK_PATH = 'avanti_stats_default'; 
+
+let TARGET_PROFILE_USERNAME = AV_LEDGER_USERNAME; 
+// REMOTE_DB_PATH is the path where data is READ FROM and WRITTEN TO.
+let REMOTE_DB_PATH = AV_LEDGER_ACCOUNT_KEY && AV_LEDGER_USERNAME
+    ? `accounts/${AV_LEDGER_ACCOUNT_KEY}/profiles/${AV_LEDGER_USERNAME}/avanti_stats`
+    : DEFAULT_FALLBACK_PATH; 
+
+let USER_SETTINGS = {
+    GFA: true, 
+    synchronization: 'none', 
+};
+
+/* ---------- State & Storage ---------- */
+const state = {
+    currentDate: null,    
+    dates: {},            
+    selectMode: false,
+    selectedForDelete: new Set(),
+    ordersModalItemId: null,
+    futureWindowDays: 60,  
+    pastWindowDays: 60     
+};
+
+let dataListenerActive = false;
+let currentDataRef = null;
+
+/* ---------------------------------------------
+// SYNC STATUS LOGIC
+// --------------------------------------------- */
+const syncSpan = document.getElementById("sync");
+
+/**
+ * Helper to determine the target key and message from a sync object.
+ */
+function getTarget(syncObject) {
+    if (typeof syncObject === 'object' && syncObject !== null) {
+        const targets = Object.keys(syncObject);
+        if (targets.length > 0 && syncObject[targets[0]] === true) {
+            return { username: targets[0], status: targets.length > 1 ? `Multiple Targets (${targets.length})` : targets[0] };
+        }
+    }
+    return null;
+}
+
+/**
+ * Updates the sync status display span based on settings and user profile data.
+ */
+function updateSyncDisplay() {
+    const accountName = localStorage.getItem("AV_ledger_account_key");
+    const username = localStorage.getItem("AV_ledger_username");
+
+    if (!firebaseDB || !accountName || !username) {
+        if(syncSpan) syncSpan.textContent = "Offline or No User Data";
+        return;
+    }
+    
+    if(syncSpan) syncSpan.textContent = "Loading...";
+
+    const settingsRef   = firebaseDB.ref(`accounts/${accountName}/settings`);
+    const syncingToRef  = firebaseDB.ref(`accounts/${accountName}/profiles/${username}/syncingTo`);
+    const syncingWithRef= firebaseDB.ref(`accounts/${accountName}/profiles/${username}/syncingWith`);
+
+    Promise.all([
+        settingsRef.once("value"),
+        syncingToRef.once("value"),
+        syncingWithRef.once("value")
+    ])
+    .then(([settingsSnap, syncingToSnap, syncingWithSnap]) => {
+
+        const settings = settingsSnap.val() || {};
+        const syncMode = settings.synchronization;
+        const syncingTo = syncingToSnap.val() || {}; 
+        const syncingWith = syncingWithSnap.val() || {};
+
+        if (syncMode === "all") {
+            if(syncSpan) syncSpan.textContent = "Syncing All Profiles";
+            return;
+        }
+
+        const sourceTarget = getTarget(syncingWith);
+        const sendTarget = getTarget(syncingTo);
+
+        if (sourceTarget) {
+            if(syncSpan) syncSpan.textContent = `Source: ${sourceTarget.status}`;
+            return;
+        }
+
+        if (sendTarget) {
+            if(syncSpan) syncSpan.textContent = `syncing to: ${sendTarget.status}`;
+            return;
+        }
+        
+        if(syncSpan) syncSpan.textContent = "not sycing";
+
+    })
+    .catch(err => {
+        console.error("Error loading sync state:", err);
+        if(syncSpan) syncSpan.textContent = "Error loading sync";
+    });
+}
+
+
+/**
+ * Sets up real-time Firebase listeners for sync status display.
+ */
+function setupSyncListeners() {
+    const accountName = localStorage.getItem("AV_ledger_account_key");
+    const username = localStorage.getItem("AV_ledger_username");
+
+    if (!firebaseDB || !accountName || !username) {
+        return; 
+    }
+    
+    const settingsRef   = firebaseDB.ref(`accounts/${accountName}/settings`);
+    const syncingToRef  = firebaseDB.ref(`accounts/${accountName}/profiles/${username}/syncingTo`);
+    const syncingWithRef= firebaseDB.ref(`accounts/${accountName}/profiles/${username}/syncingWith`);
+
+    settingsRef.on("value", updateSyncDisplay);
+    syncingToRef.on("value", updateSyncDisplay);
+    syncingWithRef.on("value", updateSyncDisplay);
+}
+
+
+/* ---------- Helpers ---------- */
+function formatDateLabel(dateKey) {
+    const d = new Date(dateKey + 'T00:00:00');
+    const day = d.getDate();
+    const daySuffix = (n => { if (n%10==1 && n!=11) return 'st'; if (n%10==2 && n!=12) return 'nd'; if (n%10==3 && n!=13) return 'rd'; return 'th'; })(day);
+    const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    return `${day}${daySuffix} ${months[d.getMonth()]}, ${d.getFullYear()}`;
+}
+function todayKey(){ const d=new Date(); return d.toISOString().slice(0,10); }
+function addDays(yyyy_mm_dd, n) {
+    const d = new Date(yyyy_mm_dd);
+    d.setDate(d.getDate() + n);
+    return d.toISOString().slice(0, 10);
+}
+function clone(obj){ return JSON.parse(JSON.stringify(obj)); }
+
+function sanitizeNumber(value){
+    const n = Number(String(value).replace(/[^0-9.-]+/g,''));
+    return isNaN(n) ? 0 : n;
+}
+
+/* ---------- Settings and Synchronization Logic (Admin Priority) ---------- */
+
+async function checkProfileAndSyncSettings() {
+    AV_LEDGER_ACCOUNT_KEY = localStorage.getItem('AV_ledger_account_key');
+    AV_LEDGER_USERNAME = localStorage.getItem('AV_ledger_username');
+    
+    if (!firebaseDB || !AV_LEDGER_ACCOUNT_KEY || !AV_LEDGER_USERNAME) {
+        TARGET_PROFILE_USERNAME = AV_LEDGER_USERNAME;
+        REMOTE_DB_PATH = DEFAULT_FALLBACK_PATH;
+        console.warn("Firebase or user keys not available. Using default path. App will not save data.");
+        return;
+    }
+
+    try {
+        const accountRef = firebaseDB.ref(`accounts/${AV_LEDGER_ACCOUNT_KEY}`);
+        const profileRef = accountRef.child(`profiles/${AV_LEDGER_USERNAME}`);
+
+        const [settingsSnapshot, profileSnapshot, allProfilesSnapshot] = await Promise.all([
+            accountRef.child('settings').once('value'),
+            profileRef.once('value'),
+            accountRef.child('profiles').once('value') // Fetch all profiles to check status
+        ]);
+
+        const settingsData = settingsSnapshot.val() || {};
+        const profileData = profileSnapshot.val() || {};
+        const allProfilesData = allProfilesSnapshot.val() || {};
+
+        // 1. Load User Settings
+        if (settingsData) {
+            if (settingsData[AV_LEDGER_USERNAME] && typeof settingsData[AV_LEDGER_USERNAME].GFA === 'boolean') {
+                USER_SETTINGS.GFA = settingsData[AV_LEDGER_USERNAME].GFA;
+            }
+            if (settingsData.synchronization) {
+                USER_SETTINGS.synchronization = settingsData.synchronization;
+            }
+        }
+
+        // 2. Determine Data Source (REMOTE_DB_PATH)
+        let syncSourceUsername = AV_LEDGER_USERNAME; 
+        
+        // GLOBAL SYNC: Overrides specific syncs
+        if (USER_SETTINGS.synchronization === 'all') {
+            syncSourceUsername = 'GLOBAL_LEDGER'; 
+            console.log(`Synchronization: GLOBAL. Using path for ${syncSourceUsername}`);
+
+        } else if (profileData.syncingWith && typeof profileData.syncingWith === 'object') {
+            // SPECIFIC SYNC: Syncing with another profile (or profiles)
+            const targets = Object.keys(profileData.syncingWith).filter(t => profileData.syncingWith[t] === true);
+            
+            if (targets.length > 0) {
+                
+                // === ADMIN PRIORITY LOGIC ===
+                
+                let adminTargets = [];
+                targets.forEach(username => {
+                    const status = allProfilesData[username] && allProfilesData[username].authStatus;
+                    if (status === 'Admin') {
+                        adminTargets.push(username);
+                    }
+                });
+
+                if (adminTargets.length > 0) {
+                    // If Admin exists, sort by username alphabetically and select the first
+                    adminTargets.sort((a, b) => a.localeCompare(b));
+                    syncSourceUsername = adminTargets[0];
+                    console.log(`Synchronization: ADMIN RESOLVE. Source: ${syncSourceUsername}`);
+                } else {
+                    // If no Admin, fall back to the first target found (alphabetical by key)
+                    targets.sort((a, b) => a.localeCompare(b));
+                    syncSourceUsername = targets[0];
+                    console.log(`Synchronization: PROFILE (No Admin). Source: ${syncSourceUsername}`);
+                }
+            }
+        }
+        
+        TARGET_PROFILE_USERNAME = syncSourceUsername;
+        
+        // 3. Define the final database path
+        if (TARGET_PROFILE_USERNAME === 'GLOBAL_LEDGER') {
+             REMOTE_DB_PATH = `accounts/${AV_LEDGER_ACCOUNT_KEY}/global_ledger/avanti_stats`;
+        } else {
+            REMOTE_DB_PATH = `accounts/${AV_LEDGER_ACCOUNT_KEY}/profiles/${TARGET_PROFILE_USERNAME}/avanti_stats`;
+        }
+
+    } catch (e) {
+        console.error('Failed to check user settings/sync. Proceeding with defaults.', e);
+        // Fallback
+        REMOTE_DB_PATH = `accounts/${AV_LEDGER_ACCOUNT_KEY}/profiles/${AV_LEDGER_USERNAME}/avanti_stats`;
+        TARGET_PROFILE_USERNAME = AV_LEDGER_USERNAME;
+    }
+}
+
+/* ---------- Persistence: Firebase Real-time Listener ---------- */
+
+function setupDataListener() {
+    if(!firebaseDB || REMOTE_DB_PATH === DEFAULT_FALLBACK_PATH || dataListenerActive) {
+        return;
+    }
+
+    if (currentDataRef) {
+        // Remove previous listener if the path changed
+        currentDataRef.off('value'); 
+    }
+
+    currentDataRef = firebaseDB.ref(REMOTE_DB_PATH);
+    dataListenerActive = true;
+    
+    currentDataRef.on('value', (snapshot) => {
+        const remote = snapshot.val();
+        
+        if (remote && remote.dates) {
+            state.dates = remote.dates || {};
+            if (remote.currentDate && remote.currentDate !== state.currentDate) {
+                 // Only update currentDate if it exists remotely
+                 state.currentDate = remote.currentDate;
+            }
+            console.log(`Real-time update received from ${REMOTE_DB_PATH}`);
+        } else if (Object.keys(state.dates).length === 0) {
+            // If the remote is empty and local state is empty, initialize default.
+            initializeDefault();
+            console.log('Real-time listener: No remote data found, initialized default structure locally.');
+        }
+        
+        // Ensure the current date is valid after any update
+        if(!state.currentDate) state.currentDate = todayKey();
+        ensureDateExists(state.currentDate);
+
+        // Re-render the UI based on the new state
+        renderAll();
+    }, (error) => {
+        console.error("Firebase Real-time Listener Failed:", error);
+        dataListenerActive = false;
+    });
+}
+
+
+async function loadState(){
+    // 1. Determine the correct data source path (Admin Priority handled here)
+    await checkProfileAndSyncSettings();
+    
+    if(firebaseDB && isOnline && REMOTE_DB_PATH !== DEFAULT_FALLBACK_PATH){
+        // 2. Setup the real-time listener to handle the data fetching and subsequent updates
+        setupDataListener();
+        
+    } else {
+        // Offline or Fallback Case
+        initializeDefault();
+        console.warn('Offline or Missing User Keys. Data operations disabled.');
+        if(!state.currentDate) state.currentDate = todayKey();
+        ensureDateExists(state.currentDate);
+    }
+
+    if(!state.currentDate) state.currentDate = todayKey();
+    ensureDateExists(state.currentDate);
+}
+
+/* ---------- Save ---------- */
+/**
+ * Triggers a save of the local state to the determined remote path.
+ */
+function saveState(){
+    const toSave = { currentDate: state.currentDate, dates: state.dates };
+    saveToDatabase(toSave);
+}
+
+function saveToDatabase(data){
+    if(!firebaseDB || !isOnline || REMOTE_DB_PATH === DEFAULT_FALLBACK_PATH) {
+        console.error('saveToDatabase: Skipping remote save (Offline, No Firebase, or Fallback Path)');
+        return;
+    }
+    
+    // Write data to the shared/source path (REMOTE_DB_PATH)
+    firebaseDB.ref(REMOTE_DB_PATH).set(data).then(()=>{
+        // The real-time listener will pick up this change and trigger renderAll()
+        console.log(`Saved successfully to remote DB at ${REMOTE_DB_PATH}`);
+    }).catch(err=>console.error('Firebase write failed', err));
+}
+
+/* ---------- Initialize Default (No Hardcoded Items) ---------- */
+function initializeDefault(){
+    const start = todayKey();
+    state.currentDate = start;
+    if(!state.dates || typeof state.dates !== 'object') state.dates = {};
+    for(let i=-2;i<=5;i++){
+        const key = addDays(start,i);
+        ensureDateExists(key);
+    }
+}
+
+/* ---------- Data Model Helpers ---------- */
+function makeEmptyDate(){
+    return { items: {}, expenses: [], incomes: [], balanced: false };
+}
+let nextItemId = 1;
+function makeItem(idHint, name='new item', opening=0, orders=0, price=0, closing=0){
+    const id = idHint || `itm${Date.now()}${nextItemId++}`;
+    return {
+        id,
+        name,
+        opening: Number(opening||0),
+        orders: Number(orders||0),
+        price: Number(price||0),
+        closing: Number(closing||0),
+        batches: []
+    };
+}
+
+/* ---------- Ensure date exists + bootstrap from nearest neighbor (FORWARD ONLY) ---------- */
+function ensureDateExists(dateKey){
+    if(!dateKey) return;
+    if(!state.dates) state.dates = {};
+    if(!state.dates[dateKey]) {
+        state.dates[dateKey] = makeEmptyDate();
+        const searchRange = 30;
+        let foundKey = null;
+        
+        // Look only FORWARD first 
+        for(let i=1;i<=searchRange;i++){
+            const k = addDays(dateKey, i);
+            if(state.dates[k] && state.dates[k].items && Object.keys(state.dates[k].items).length>0){
+                foundKey = k;
+                break;
+            }
+        }
+        // If not found forward, look backward 
+        if(!foundKey){
+            for(let i=1;i<=searchRange;i++){
+                const k = addDays(dateKey, -i);
+                // ONLY copy from previous if dateKey is TODAY or LATER
+                if(dateKey >= todayKey()){ 
+                    if(state.dates[k] && state.dates[k].items && Object.keys(state.dates[k].items).length>0){
+                        foundKey = k;
+                        break;
+                    }
+                }
+            }
+        }
+
+
+        if(foundKey){
+            // copy items but keep opening/closes sensible:
+            Object.values(state.dates[foundKey].items).forEach(it => {
+                const copy = makeItem(it.id, it.name, it.opening || it.closing || 0, 0, it.price || 0, 0);
+                copy.batches = clone(it.batches || []);
+                state.dates[dateKey].items[copy.id] = copy;
+            });
+        }
+    } else {
+        // Defensive: ensure proper shape
+        if(!state.dates[dateKey].items) state.dates[dateKey].items = {};
+        if(!Array.isArray(state.dates[dateKey].expenses)) state.dates[dateKey].expenses = [];
+        if(!Array.isArray(state.dates[dateKey].incomes)) state.dates[dateKey].incomes = [];
+    }
+}
+
+/* ---------- Rendering ---------- */
+function renderAll(){
+    renderDateDisplay();
+    renderTable();
+    renderExpensesIncomes();
+    renderTotals();
+    const dd = document.getElementById('moreDropdown');
+    if(dd) dd.classList.remove('active');
+}
+function renderDateDisplay(){
+    const el = document.getElementById('dateDisplay');
+    if(el) el.textContent = formatDateLabel(state.currentDate);
+    const balanced = !!(state.dates[state.currentDate] && state.dates[state.currentDate].balanced);
+    const switchEl = document.getElementById('doneBalancingSwitch');
+    if(switchEl) switchEl.checked = balanced;
+}
+
+function handleOrdersClick(itemId) {
+    if (state.selectMode) return;
+    if (USER_SETTINGS.GFA) {
+        openOrdersModal(itemId);
+    } else {
+        directOrderEntry(itemId);
+    }
+}
+
+function directOrderEntry(itemId) {
+    const item = state.dates[state.currentDate] && state.dates[state.currentDate].items[itemId];
+    if (!item) return;
+
+    const tr = document.querySelector(`tr[data-item-id="${itemId}"]`);
+    const tdOrders = tr ? tr.querySelector('td[data-col="orders"]') : null;
+
+    if (!tdOrders) return;
+
+    tdOrders.contentEditable = true;
+    tdOrders.focus();
+    tdOrders.style.cursor = 'text'; 
+    tdOrders.onclick = null; 
+
+    const saveAndCleanup = () => {
+        tdOrders.contentEditable = false;
+        tdOrders.onclick = () => handleOrdersClick(itemId); 
+        tdOrders.style.cursor = 'pointer';
+
+        const q = Math.max(0, sanitizeNumber(tdOrders.textContent || 0));
+        
+        item.orders = q;
+        item.lastOrderCost = 0; 
+        item.batches = item.batches || [];
+        
+        if (q > 0) item.batches.push({ qty: q, cost: 0, date: state.currentDate });
+        
+        persistItemChange(itemId);
+    };
+
+    tdOrders.onblur = saveAndCleanup;
+    tdOrders.onkeydown = (e) => { 
+        if (e.key === 'Enter') { 
+            e.preventDefault(); 
+            tdOrders.blur(); 
+        } 
+    };
+}
+
+
+function renderTable(){
+    const tbody = document.getElementById('statsTableBody');
+    if(!tbody) return;
+    tbody.innerHTML = '';
+    const dateObj = state.dates[state.currentDate] || makeEmptyDate();
+    const items = Object.values(dateObj.items || {});
+    const filter = (document.getElementById('searchItemInput')||{value:''}).value.trim().toUpperCase();
+
+    let totalSales = 0;
+    items.forEach(item=>{
+        if(filter && !item.name.toUpperCase().includes(filter)) return;
+        const tr = document.createElement('tr');
+        tr.dataset.itemId = item.id;
+
+        // select col
+        const tdSelect = document.createElement('td'); tdSelect.className = 'select-col';
+        if(state.selectMode) tdSelect.classList.remove('hidden'); else tdSelect.classList.add('hidden');
+        const cb = document.createElement('input'); cb.type='checkbox';
+        cb.checked = state.selectedForDelete.has(item.id);
+        cb.onchange = (e)=>{ if(e.target.checked) state.selectedForDelete.add(item.id); else state.selectedForDelete.delete(item.id); updateSelectionUI(); };
+        tdSelect.appendChild(cb);
+        tr.appendChild(tdSelect);
+
+        const tdItem = document.createElement('td'); tdItem.className='editable'; tdItem.dataset.col='item'; tdItem.contentEditable = true; tdItem.spellcheck=false;
+        tdItem.textContent = item.name;
+        tdItem.onblur = ()=>{
+            const newName = tdItem.textContent.trim() || 'new item';
+            if(state.dates[state.currentDate] && state.dates[state.currentDate].items[item.id]){
+                state.dates[state.currentDate].items[item.id].name = newName;
+            }
+            propagateNameAcrossDates(item.id, newName);
+            persistItemChange(item.id);
+        };
+        tdItem.onkeydown = (e)=>{ if(e.key==='Enter'){ e.preventDefault(); tdItem.blur(); } };
+        tr.appendChild(tdItem);
+
+        const tdOpening = document.createElement('td'); tdOpening.className='editable'; tdOpening.dataset.col='openingStock'; tdOpening.contentEditable = true; tdOpening.textContent = item.opening;
+        tdOpening.onblur = ()=>{ item.opening = sanitizeNumber(tdOpening.textContent); persistItemChange(item.id); };
+        tdOpening.onkeydown = (e)=>{ if(e.key==='Enter'){ e.preventDefault(); tdOpening.blur(); } };
+        tr.appendChild(tdOpening);
+
+        const tdOrders = document.createElement('td'); tdOrders.dataset.col='orders'; tdOrders.style.cursor='pointer'; tdOrders.onclick = ()=>handleOrdersClick(item.id);
+        tdOrders.textContent = item.orders;
+        tr.appendChild(tdOrders);
+
+        const totalStock = Number(item.opening) + Number(item.orders);
+        const tdTotalStock = document.createElement('td'); tdTotalStock.dataset.col='totalStock'; tdTotalStock.textContent = totalStock;
+        tr.appendChild(tdTotalStock);
+
+        const tdPrice = document.createElement('td'); tdPrice.className='editable'; tdPrice.dataset.col='price'; tdPrice.contentEditable=true; tdPrice.textContent = item.price;
+        tdPrice.onblur = ()=>{ const old = item.price; item.price = sanitizeNumber(tdPrice.textContent); if(item.price !== old) propagatePriceToFuture(item.id, item.price); persistItemChange(item.id); };
+        tdPrice.onkeydown = (e)=>{ if(e.key==='Enter'){ e.preventDefault(); tdPrice.blur(); } };
+        tr.appendChild(tdPrice);
+
+        const tdClosing = document.createElement('td'); tdClosing.className='editable'; tdClosing.dataset.col='closingStock'; tdClosing.contentEditable=true; tdClosing.textContent = item.closing;
+        tdClosing.onblur = ()=>{ item.closing = sanitizeNumber(tdClosing.textContent); persistItemChange(item.id); propagateClosingToNext(item.id); };
+        tdClosing.onkeydown = (e)=>{ if(e.key==='Enter'){ e.preventDefault(); tdClosing.blur(); } };
+        tr.appendChild(tdClosing);
+
+        const sales = Math.max(0, totalStock - Number(item.closing));
+        const tdSales = document.createElement('td'); tdSales.dataset.col='sales'; tdSales.textContent = sales;
+        tr.appendChild(tdSales);
+
+        const total = sales * Number(item.price);
+        const tdTotal = document.createElement('td'); tdTotal.dataset.col='total'; tdTotal.textContent = total;
+        tr.appendChild(tdTotal);
+
+        tbody.appendChild(tr);
+        totalSales += Number(total);
+    });
+
+    const totEl = document.getElementById('totalSalesAmount');
+    if(totEl) totEl.textContent = "K"+totalSales;
+    updateTotalsNumbers();
+}
+
+/* ---------- Utility render helpers ---------- */
+function updateTotalsNumbers(){
+    const dateObj = state.dates[state.currentDate] || makeEmptyDate();
+    let netSales = 0;
+    Object.values(dateObj.items || {}).forEach(it=>{ const total = Math.max(0,( (Number(it.opening)+Number(it.orders))-Number(it.closing) )) * Number(it.price); netSales += total; });
+    const netIncome = (dateObj.incomes || []).reduce((s,i)=>s+Number(i.amount||0),0);
+    const netExpenses = (dateObj.expenses || []).reduce((s,i)=>s+Number(i.amount||0),0);
+    const saleRevenue = netSales + netIncome - netExpenses;
+
+    const netSalesEl = document.getElementById('netSalesAmount');
+    if(netSalesEl) netSalesEl.textContent = `K${netSales}`;
+    const netIncomeEl = document.getElementById('netIncomeAmount');
+    if(netIncomeEl) netIncomeEl.textContent = `K${netIncome}`;
+    const netExpensesEl = document.getElementById('netExpensesAmount');
+    if(netExpensesEl) netExpensesEl.textContent = `K${netExpenses}`;
+    const saleRevenueEl = document.getElementById('saleRevenueAmount');
+    if(saleRevenueEl) saleRevenueEl.textContent = `K${saleRevenue}`;
+}
+
+/* ---------- Expenses/Incomes render ---------- */
+function renderExpensesIncomes(){
+    const dateObj = state.dates[state.currentDate] || makeEmptyDate();
+    const exEl = document.getElementById('expensesList'); const inEl = document.getElementById('incomesList');
+    if(exEl) exEl.innerHTML = '';
+    if(inEl) inEl.innerHTML = '';
+
+    (dateObj.expenses || []).forEach(e=>{
+        const row = document.createElement('div'); row.className = 'finance-item';
+        const radio = document.createElement('input'); radio.type='checkbox'; radio.name='expense-radio'; radio.dataset.id = e.id;
+        radio.onchange = ()=>handleFinanceSelection('expense');
+        row.appendChild(radio);
+        const details = document.createElement('div'); details.className='finance-item-details';
+        const amt = document.createElement('div'); amt.className='finance-amount'; amt.textContent = `K${e.amount}`;
+        const desc = document.createElement('div'); desc.className='finance-description'; desc.textContent = e.description||'';
+        details.appendChild(amt); details.appendChild(desc);
+        row.appendChild(details);
+        exEl && exEl.appendChild(row);
+    });
+
+    (dateObj.incomes || []).forEach(e=>{
+        const row = document.createElement('div'); row.className = 'finance-item';
+        const radio = document.createElement('input'); radio.type='checkbox'; radio.name='income-radio'; radio.dataset.id = e.id;
+        radio.onchange = ()=>handleFinanceSelection('income');
+        row.appendChild(radio);
+        const details = document.createElement('div'); details.className='finance-item-details';
+        const amt = document.createElement('div'); amt.className='finance-amount'; amt.textContent = `K${e.amount}`;
+        const desc = document.createElement('div'); desc.className='finance-description'; desc.textContent = e.description||'';
+        details.appendChild(amt); details.appendChild(desc);
+        row.appendChild(details);
+        inEl && inEl.appendChild(row);
+    });
+    updateTotalsNumbers();
+}
+
+/* ---------- Selection / Select Mode ---------- */
+function enterSelectMode(){
+const dd = document.getElementById('moreDropdown'); if(dd) dd.classList.remove('active');
+    state.selectMode = true;
+    state.selectedForDelete.clear();
+    document.querySelectorAll('.select-col').forEach(td=>td.classList.remove('hidden'));
+    const pill = document.getElementById('dateNavPill');
+    if(pill){
+        pill.innerHTML = `
+            <button style="background: none; color: var(--system-blue);"class="date-nav-btn" onclick="selectAllItems()"><i class="fas fa-check-double"></i> Select all</button>
+            <div class="date-display" id="dateDisplaySmall" style="font-size:0.9rem; text-align:center;">Select items</div>
+            <button style="background: none; color: var(--system-blue); " class="date-nav-btn" onclick="deleteSelectedItems()"><i class="fas fa-trash"></i> Delete</button>
+        `;
+    }
+    document.getElementById('moreIcon').className = 'fas fa-times';
+    document.getElementById('moreBtn').onclick = exitSelectMode;
+    document.querySelector('.table-controls').setAttribute('colspan', '6');
+    renderTable();
+}
+function exitSelectMode(){
+    state.selectMode = false;
+    state.selectedForDelete.clear();
+    const pill = document.getElementById('dateNavPill');
+    if(pill){
+        pill.innerHTML = `
+            <button class="date-nav-btn" id="prevDateBtn" title="Previous date"><i class="fas fa-chevron-left"></i></button>
+            <div class="date-display" id="dateDisplay"></div>
+            <button class="date-nav-btn" id="nextDateBtn" title="Next date"><i class="fas fa-chevron-right"></i></button>
+        `;
+        document.getElementById('prevDateBtn').onclick = prevDate;
+        document.getElementById('nextDateBtn').onclick = nextDate;
+    }
+    document.getElementById('moreIcon').className = 'fas fa-ellipsis-h';
+    document.getElementById('moreBtn').onclick = toggleMoreDropdown;
+    
+document.querySelector('.table-controls').setAttribute('colspan', '5');
+    document.querySelectorAll('.select-col').forEach(td=>td.classList.add('hidden'));
+    renderAll();
+}
+function toggleMoreDropdown(e){
+    e && e.stopPropagation();
+    const dd = document.getElementById('moreDropdown');
+    if(dd) dd.classList.toggle('active');
+}
+document.addEventListener('click', ()=>{ const dd = document.getElementById('moreDropdown'); if(dd) dd.classList.remove('active'); });
+
+function selectAllItems(){
+    const dateObj = state.dates[state.currentDate] || makeEmptyDate();
+    Object.keys(dateObj.items || {}).forEach(id=>state.selectedForDelete.add(id));
+    renderTable();
+}
+function deleteSelectedItems(){
+    if(state.selectedForDelete.size===0){ exitSelectMode(); return; }
+    const toDel = Array.from(state.selectedForDelete);
+    toDel.forEach(id=>{
+        deleteItemFromDateAndFuture(id, state.currentDate);
+    });
+    state.selectedForDelete.clear();
+    saveState(); renderAll(); exitSelectMode();
+}
+function updateSelectionUI(){
+    const count = state.selectedForDelete.size;
+    const disp = document.querySelector('#dateDisplaySmall');
+    if(disp) disp.textContent = count>0 ? `${count} selected` : 'Select items';
+}
+
+/* ---------- CRUD: Add / Delete / Persist ---------- */
+function addRow(){
+    // ensure current date exists
+    ensureDateExists(state.currentDate);
+    const id = `itm${Date.now()}`;
+    const item = makeItem(id,'new item',0,0,0,0);
+    if(!state.dates[state.currentDate]) state.dates[state.currentDate]=makeEmptyDate();
+    if(!state.dates[state.currentDate].items) state.dates[state.currentDate].items = {};
+    state.dates[state.currentDate].items[item.id]=item;
+    // propagate forward from the added date (so future days get this item)
+    propagateItemToFuture(item, state.currentDate);
+    saveState(); renderAll();
+}
+
+/**
+ * Deletes an item from the starting date and all future dates, 
+ * UNLESS the target date has the 'balanced' status set to true.
+ */
+function deleteItemFromDateAndFuture(itemId, fromDateKey){
+    for(let i=0;i<=state.futureWindowDays;i++){
+        const dKey = addDays(fromDateKey,i);
+        const dateData = state.dates[dKey];
+        
+        if(dateData && dateData.items && dateData.items[itemId] && dateData.balanced !== true){
+            delete dateData.items[itemId];
+        } else if (dateData && dateData.balanced === true) {
+            console.log(`Skipping deletion of item ${itemId} on balanced date ${dKey}.`);
+        }
+    }
+    saveState();
+}
+
+function persistItemChange(itemId){
+    if(!state.dates[state.currentDate] || !state.dates[state.currentDate].items || !state.dates[state.currentDate].items[itemId]) return;
+    const it = state.dates[state.currentDate].items[itemId];
+    it.opening = Number(it.opening||0);
+    it.orders = Number(it.orders||0);
+    it.closing = Number(it.closing||0);
+    it.price = Number(it.price||0);
+    propagateClosingToNext(itemId);
+    saveState();
+    renderTable();
+}
+
+/* ---------- Propagation ---------- */
+/**
+ * Propagates item name changes forward from the current date.
+ */
+function propagateNameAcrossDates(itemId, newName){
+    for(let i=0; i<= state.futureWindowDays; i++){
+        const dKey = addDays(state.currentDate, i);
+        const dateData = state.dates[dKey];
+        if(dateData && dateData.balanced === true) {
+            console.log(`Skipping name propagation of item ${itemId} on balanced date ${dKey}.`);
+            continue; // Skip this balanced day, but check following days
+        }
+        
+        if(dateData && dateData.items && dateData.items[itemId]){
+            state.dates[dKey].items[itemId].name = newName;
+        }
+    }
+    saveState();
+    renderAll();
+}
+
+/**
+ * Propagates price changes forward from the current date.
+ */
+function propagatePriceToFuture(itemId, newPrice){
+    for(let i=0;i<=state.futureWindowDays;i++){
+        const dKey = addDays(state.currentDate, i);
+        ensureDateExists(dKey);
+        const dateData = state.dates[dKey];
+        
+        if(dateData && dateData.balanced === true) {
+            console.log(`Skipping price propagation of item ${itemId} on balanced date ${dKey}.`);
+            continue;
+        }
+        
+        if(dateData && dateData.items && dateData.items[itemId]){
+            state.dates[dKey].items[itemId].price = Number(newPrice);
+        }
+    }
+    saveState();
+    renderAll();
+}
+
+/**
+ * Propagates closing stock to the immediate next day's opening stock.
+ */
+function propagateClosingToNext(itemId){
+    const thisDate = state.currentDate;
+    const nextDate = addDays(thisDate,1);
+    const thisItem = state.dates[thisDate] && state.dates[thisDate].items && state.dates[thisDate].items[itemId];
+    if(!thisItem) return;
+    ensureDateExists(nextDate);
+    
+    // Check if the NEXT date is already balanced. 
+    const nextDateData = state.dates[nextDate];
+    const isNextDateBalanced = nextDateData && nextDateData.balanced === true;
+
+    if(!nextDateData.items[itemId]) {
+        if (!isNextDateBalanced) {
+            const copy = makeItem(itemId, thisItem.name, thisItem.closing, 0, thisItem.price, 0);
+            copy.batches = clone(thisItem.batches || []);
+            state.dates[nextDate].items[itemId] = copy;
+        } else {
+             // If balanced and item doesn't exist, we do nothing to the next day's structure.
+            console.log(`Skipping item creation on balanced next date ${nextDate}.`);
+        }
+    } else {
+        // If the item exists, update the opening stock regardless of balanced status
+        state.dates[nextDate].items[itemId].opening = Number(thisItem.closing||0);
+    }
+    saveState();
+    renderTable();
+}
+
+/**
+ * Propagates item creation (add new row) to future dates.
+ */
+function propagateItemToFuture(item, fromDateKey){
+    for(let i=1;i<=state.futureWindowDays;i++){
+        const dKey = addDays(fromDateKey, i);
+        ensureDateExists(dKey);
+        const dateData = state.dates[dKey];
+
+        if(dateData && dateData.balanced === true) {
+            console.log(`Skipping new item creation for item ${item.id} on balanced date ${dKey}.`);
+            continue; 
+        }
+
+        if(!dateData.items[item.id]){
+            const copy = makeItem(item.id, item.name, item.closing || item.opening || 0, 0, item.price, 0);
+            copy.batches = clone(item.batches || []);
+            dateData.items[item.id] = copy;
+        }
+    }
+    saveState();
+}
+
+/* ---------- Search ---------- */
+function searchTable(){
+    renderTable();
+}
+
+/* ---------- Orders Modal / FIFO ---------- */
+function openOrdersModal(itemId){
+    if(state.selectMode) return;
+    const item = state.dates[state.currentDate] && state.dates[state.currentDate].items[itemId];
+    if(!item) return;
+    document.getElementById('modalItemName').textContent = item.name;
+    document.getElementById('orderQuantity').value = item.orders || 0;
+    // Check for last order cost, falling back to batch cost if necessary
+    let lastCost = item.lastOrderCost || 0;
+    if (lastCost === 0 && item.batches && item.batches.length > 0) {
+        lastCost = item.batches[item.batches.length - 1].cost || 0;
+    }
+    document.getElementById('costPrice').value = lastCost;
+    state.ordersModalItemId = itemId;
+    document.getElementById('ordersModal').classList.add('show');
+}
+function closeOrdersModal(){
+    document.getElementById('ordersModal').classList.remove('show');
+    state.ordersModalItemId = null;
+}
+function saveOrders(){
+    const q = Math.max(0, Number(document.getElementById('orderQuantity').value || 0));
+    const cost = Math.max(0, Number(document.getElementById('costPrice').value || 0));
+    const id = state.ordersModalItemId;
+    if(!id) { closeOrdersModal(); return; }
+    const item = state.dates[state.currentDate].items[id];
+    
+    // Manage batches
+    item.batches = item.batches ? item.batches.filter(b => b.date !== state.currentDate) : [];
+    if(q > 0) {
+        item.batches.push({ qty: q, cost: cost, date: state.currentDate });
+    }
+
+    item.orders = item.batches.filter(b => b.date === state.currentDate).reduce((sum, b) => sum + b.qty, 0);
+    item.lastOrderCost = cost;
+    
+    persistItemChange(id);
+    saveState();
+    closeOrdersModal();
+}
+
+/* ---------- Date Navigation ---------- */
+function prevDate(){
+    state.currentDate = addDays(state.currentDate, -1);
+    ensureDateExists(state.currentDate);
+    // RenderAll is called by the real-time listener if currentDate changes, but we call it here 
+    renderAll(); 
+}
+function nextDate(){
+    const oldDate = state.currentDate;
+    state.currentDate = addDays(state.currentDate, 1);
+    ensureDateExists(state.currentDate);
+    // If newly created, attempt to copy items from previous date
+    if(!state.dates[state.currentDate] || Object.keys(state.dates[state.currentDate].items||{}).length===0){
+        const prev = state.dates[oldDate];
+        if(prev){
+            Object.values(prev.items || {}).forEach(it=>{
+                if(!state.dates[state.currentDate].items[it.id]){
+                    const copy = makeItem(it.id, it.name, it.closing || 0, 0, it.price, 0);
+                    copy.batches = clone(it.batches || []);
+                    state.dates[state.currentDate].items[it.id] = copy;
+                } else {
+                    state.dates[state.currentDate].items[it.id].opening = it.closing || 0;
+                }
+            });
+        }
+    }
+    // RenderAll is called by the real-time listener if currentDate changes, but we call it here 
+    renderAll();
+}
+
+/* ---------- Balancing Switch ---------- */
+function saveBalancingStatus(){
+    ensureDateExists(state.currentDate);
+    state.dates[state.currentDate].balanced = !!document.getElementById('doneBalancingSwitch').checked;
+    saveState();
+}
+
+/* ---------- Finance (expenses/incomes) via modals ---------- */
+function addExpense(){
+    document.getElementById('expenseDesc').value = '';
+    document.getElementById('expenseAmt').value = 0;
+    document.getElementById('expenseModal').classList.add('show');
+}
+function closeExpenseModal(){ document.getElementById('expenseModal').classList.remove('show'); }
+function saveExpenseFromModal(){
+    const desc = document.getElementById('expenseDesc').value || '';
+    const amt = Math.max(0, Number(document.getElementById('expenseAmt').value || 0));
+    const id = `exp${Date.now()}`;
+    ensureDateExists(state.currentDate);
+    state.dates[state.currentDate].expenses.push({ id, amount: amt, description: desc });
+    saveState(); renderExpensesIncomes(); closeExpenseModal();
+}
+
+function addIncome(){
+    document.getElementById('incomeDesc').value = '';
+    document.getElementById('incomeAmt').value = 0;
+    document.getElementById('incomeModal').classList.add('show');
+}
+function closeIncomeModal(){ document.getElementById('incomeModal').classList.remove('show'); }
+function saveIncomeFromModal(){
+    const desc = document.getElementById('incomeDesc').value || '';
+    const amt = Math.max(0, Number(document.getElementById('incomeAmt').value || 0));
+    const id = `inc${Date.now()}`;
+    ensureDateExists(state.currentDate);
+    state.dates[state.currentDate].incomes.push({ id, amount: amt, description: desc });
+    saveState(); renderExpensesIncomes(); closeIncomeModal();
+}
+
+/* finance selection handlers */
+function handleFinanceSelection(type){
+
+    const sel = document.querySelector(`input[name="${type}-radio"]:checked`);
+    const btn = document.getElementById(type==='expense' ? 'edit-btn' : 'edit-btn-inc');
+    if(sel){
+        btn.innerHTML = `<i class="small-btn fas fa-trash" title="Delete" style="margin-right:6px;" onclick="deleteFinanceItem('${type}')"></i>
+        <i class="small-btn fas fa-check-double" title="Select All" style="margin-right:6px;" onclick="selectAllFinance('${type}')"></i>
+        <i class="small-btn fas fa-times" title="Cancel" onclick="cancelFinanceSelection('${type}')"></i>`;
+        btn.onclick = null;
+
+    } else {
+
+        btn.innerHTML = `<button class="small-btn" ><i class="fas fa-plus"></i></button>`;
+        btn.onclick = type==='expense' ? addExpense : addIncome;
+    }
+}
+function deleteFinanceItem(type){
+    const sel = document.querySelector(`input[name="${type}-radio"]:checked`);
+    if(!sel) return;
+    const id = sel.dataset.id;
+    const arrName = type==='expense' ? 'expenses' : 'incomes';
+    const arr = state.dates[state.currentDate][arrName];
+    const idx = arr.findIndex(x=>x.id===id);
+    if(idx>=0) arr.splice(idx,1);
+    saveState(); renderExpensesIncomes();
+}
+function selectAllFinance(type){
+    const radios = document.querySelectorAll(`input[name="${type}-radio"]`);
+    radios.forEach(r=>r.checked=true);
+    handleFinanceSelection(type);
+}
+function cancelFinanceSelection(type){
+    document.querySelectorAll(`input[name="${type}-radio"]`).forEach(r=>r.checked=false);
+    handleFinanceSelection(type);
+
+}
+
+/* ---------- Init ---------- */
+window.switchUser = async function(newAccountKey, newUsername) {
+    // 1. Update local storage
+    localStorage.setItem('AV_ledger_account_key', newAccountKey);
+    localStorage.setItem('AV_ledger_username', newUsername);
+    
+    // 2. Reset state
+    state.dates = {};
+    state.currentDate = null;
+    
+    // 3. Re-initialize
+    console.log(`Switching user to ${newUsername}. Reloading data from Firebase...`);
+    await init();
+}
+
+async function init(){
+    // Load state and settings (which updates AV_LEDGER_ACCOUNT_KEY/USERNAME and REMOTE_DB_PATH)
+    await loadState(); 
+
+    // Setup UI event listeners
+    const prevBtn = document.getElementById('prevDateBtn'); if(prevBtn) prevBtn.onclick = prevDate;
+    const nextBtn = document.getElementById('nextDateBtn'); if(nextBtn) nextBtn.onclick = nextDate;
+    const moreBtn = document.getElementById('moreBtn'); if(moreBtn) moreBtn.onclick = toggleMoreDropdown;
+    const moreDropdown = document.getElementById('moreDropdown'); if(moreDropdown) moreDropdown.addEventListener('click', (e)=>e.stopPropagation());
+    const addExpBtn = document.getElementById('addExpenseBtn'); if(addExpBtn) addExpBtn.onclick = addExpense;
+    const addIncBtn = document.getElementById('addIncomeBtn'); if(addIncBtn) addIncBtn.onclick = addIncome;
+    const doneBalancingSwitch = document.getElementById('doneBalancingSwitch'); if(doneBalancingSwitch) doneBalancingSwitch.onchange = saveBalancingStatus;
+    const addRowBtn = document.getElementById('addRowBtn'); if(addRowBtn) addRowBtn.onclick = addRow;
+    const searchItemInput = document.getElementById('searchItemInput'); if(searchItemInput) searchItemInput.oninput = searchTable;
+    const enterSelectModeBtn = document.getElementById('enterSelectModeBtn'); if(enterSelectModeBtn) enterSelectModeBtn.onclick = enterSelectMode;
+
+
+    // Setup sync status listeners and initial display update
+    setupSyncListeners(); 
+    updateSyncDisplay(); // Initial load for sync status
+
+    // renderAll() is now called by the real-time listener (setupDataListener)
+}
+
+function setupModalCloseOnBackdropClick() {
+    const modals = document.querySelectorAll('.modal');
+    modals.forEach(modal => {
+        modal.addEventListener('click', function(event) {
+            if (event.target === modal) {
+                const modalId = modal.id;
+                // Attempt to call a specific close function if it exists (e.g., closeOrdersModal)
+                const closeFunctionName = `close${modalId.charAt(0).toUpperCase() + modalId.slice(1)}`;
+                if (typeof window[closeFunctionName] === 'function') {
+                    window[closeFunctionName]();
+                } else {
+                    // Fallback close
+                    modal.classList.remove('show');
+                }
+            }
+        });
+    });
+}
+
+document.addEventListener('DOMContentLoaded', setupModalCloseOnBackdropClick);
+document.addEventListener('DOMContentLoaded', init);
+
+</script>
+
+
+</body>
+</html>

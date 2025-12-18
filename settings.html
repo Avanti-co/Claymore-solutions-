@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=0.93, maximum-scale=0.93, user-scalable=no">
+    <title>Settings - iOS Style</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#3f72af">
+
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("/service-worker.js")
+        .then(reg => console.log("Service worker registered:", reg))
+        .catch(err => console.error("Service worker error:", err));
+    });
+  }
+</script>
+    <style>
+        :root{
+            --system-blue: #007AFF;
+            --system-red: #FF3B30;
+            --bg: #F2F2F7;
+            --card: #FFFFFF;
+            --border-color: #E5E5E5;
+            --text-color: #000000;
+            --muted-color: #8E8E93;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+        }
+        body{
+            max-width: 100vw;
+            margin: 0 auto;
+            min-height: 100vh;
+            background-color: var(--bg);
+            padding-top: 80px;
+padding-bottom: 50px;
+        }
+         .header{
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            padding:25px 0px 10px 12px;
+            background:#3f72af;
+            border-bottom:1px solid var(--border-color);
+            position:fixed; top:0; z-index:10;
+            width: 100%;
+        }
+        .header a{
+            color:#a3c9f1;
+            text-decoration:none;
+            font-size:1.0rem;
+            font-weight:500;
+            text-align: left;
+        }
+        .header-title{
+            font-weight:650;
+            font-size:1.2rem;
+            text-align:center;
+            flex:1;
+            color:white;
+            margin-left: -30px;
+        }
+        .section-header {
+            color: #6d6d72;
+            font-size: 14px;
+            padding: 10px 18px 5px;
+            font-weight: 500;
+        }
+        .list-item-group {
+            background-color: #fff;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 25px;
+            box-shadow: 0 0.5px 0 0 rgba(0, 0, 0, 0.05);
+        }
+        .ios-toggle input:checked + .slider {
+            background-color: #34c759;
+        }
+        .ios-toggle .slider {
+            background-color: #c7c7c7;
+            transition: .4s;
+        }
+        .ios-toggle .slider:before {
+            background-color: white;
+            transition: .4s;
+        }
+        .ios-toggle input:checked + .slider:before {
+            transform: translateX(1.5rem);
+        }
+        .delete-account-btn {
+            color: var(--system-red) !important;
+            font-weight: 400;
+        }
+        .delete-account-btn:active {
+            background-color: var(--system-red) !important;
+            color: white !important;
+        }
+        .hidden-search {
+            display: none !important;
+        }
+        .disabled-link {
+            opacity: 0.5;
+            pointer-events: none;
+            background-color: transparent !important;
+        }
+        .disabled-link p {
+            color: var(--muted-color) !important;
+        }
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        .modal-content {
+            background-color: white;
+            
+            border-radius: 12px;
+            width: 100%;
+            max-width: 100vw;
+        }
+        .modal-item-list div {
+            padding: 0px 0;
+            cursor: pointer;
+        }
+        .modal-item-list div:not(:last-child) {
+            border-bottom: 1px solid #eee;
+        }
+/* --- iOS Switch Fix --- */
+
+.ios-toggle {
+    position: relative;
+    display: inline-block;
+    width: 45px;
+    height: 26px;
+}
+
+.ios-toggle input {
+    display: none;
+}
+
+.ios-toggle .slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background-color: #c7c7c7;
+    border-radius: 34px;
+    transition: 0.3s;
+}
+
+.ios-toggle .slider:before {
+    position: absolute;
+    content: "";
+    height: 22px;
+    width: 22px;
+    left: 2px;
+    top: 2px;
+    background-color: white;
+    border-radius: 50%;
+    box-shadow: 0 0 3px rgba(0,0,0,0.3);
+    transition: 0.3s;
+}
+
+/* Sliding animation */
+.ios-toggle input:checked + .slider {
+    background-color: #34c759;
+}
+
+.ios-toggle input:checked + .slider:before {
+    transform: translateX(19px);
+}
+    </style>
+</head>
+<body>
+<div class="header">
+    <a href="#" onclick="history.back(); return false;"><i class="fas fa-chevron-left"></i> Back</a>
+    <div class="header-title text-white">Settings</div>
+    <div style="width:36px;"></div>
+</div>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600&display=swap" rel="stylesheet">
+
+<nav style="
+    position: fixed; 
+    bottom: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 70px; 
+    background: rgba(255, 255, 255, 0.85); 
+    backdrop-filter: blur(20px); 
+    -webkit-backdrop-filter: blur(20px); 
+    border-top: 1px solid rgba(0, 0, 0, 0.05); 
+    display: flex; 
+    justify-content: space-around; 
+    align-items: center; 
+    z-index: 9999; 
+    padding-bottom: env(safe-area-inset-bottom);
+    font-family: 'Inter', sans-serif;
+">
+    
+    <a href="dashboard.html" style="display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #64748b; flex: 1; transition: 0.2s;">
+        <svg style="width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2;" viewBox="0 0 24 24">
+            <rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect>
+        </svg>
+        <span style="font-size: 11px; margin-top: 4px; font-weight: 500;">Home</span>
+    </a>
+
+    <a href="inventory.html" style="display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #64748b; flex: 1; position: relative;">
+       
+        
+        <svg style="width: 22px; height: 22px; fill: white; stroke: currentColor; stroke-width: 2;" viewBox="0 0 24 24">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+            <line x1="12" y1="22.08" x2="12" y2="12"></line>
+        </svg>
+        <span style="font-size: 11px; margin-top: 4px; font-weight: 500;">Inventory</span>
+    </a>
+
+    <a href="accounting-report.html" style="display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #64748b; flex: 1;">
+        <svg style="width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2;" viewBox="0 0 24 24">
+            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline>
+        </svg>
+        <span style="font-size: 11px; margin-top: 4px; font-weight: 500;">Reports</span>
+    </a>
+
+    <a href="statistics.html" style="display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #64748b; flex: 1;">
+        <svg style="width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2;" viewBox="0 0 24 24">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line>
+        </svg>
+        <span style="font-size: 11px; margin-top: 4px; font-weight: 500;">Stats</span>
+    </a>
+
+    <a href="settings.html" style="display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #3f72af; flex: 1; position: relative;">
+  <div style="position: absolute; top: -14px; width: 20px; height: 3px; background: #3f72af; border-radius: 0 0 4px 4px;"></div>
+        <svg style="width: 22px; height: 22px; fill: rgba(37, 99, 235, 0.1); stroke: currentColor; stroke-width: 2;" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0-.33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0 .33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+        <span style="font-size: 11px; margin-top: 4px; font-weight: 600;">Settings</span>
+    </a>
+</nav>
+
+<div class="settings-container p-4">
+    <div class="px-2 mb-6">
+        <div class="relative">
+            <input type="text" id="search-input" placeholder="Search Settings" class="w-full py-2 pl-10 pr-4 text-base rounded-lg border border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white" onkeyup="filterSettings()" />
+            <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+        </div>
+    </div>
+    
+    <!-- top profile summary block - give it an id so filter won't accidentally hide it via group logic -->
+    <div id="profile-header-group" onclick="location.href='profile.html'"class="list-item-group p-3 mb-6 flex items-center justify-between search-item" data-search-terms="account profile username device status">
+        <div class="flex items-center space-x-4">
+            <div class="w-14 h-14 bg-gray-200 rounded-full flex items-center justify-center border-2 border-white shadow-inner overflow-hidden" id="profile-icon-container">
+                <img id="profile-icon" src="" alt="Profile Icon" class="w-full h-full object-cover hidden" />
+                <svg id="profile-icon-svg" class="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+            </div>
+            <div>
+                <p class="text-lg font-semibold text-gray-800" id="account-name-display">Account name</p>
+                <p class="text-sm text-gray-500" id="profile-info-display">Username • Admin device</p>
+            </div>
+        </div>
+        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+    </div>
+
+    <p class="section-header search-item" data-search-terms="account">ACCOUNT</p>
+    <div class="list-item-group">
+        <div class="flex items-center justify-between p-4 border-b border-gray-200 active:bg-gray-100 clickable-setting search-item" id="manage-devices-link" data-search-terms="manage devices admins standard">
+            <div>
+                <p class="text-base text-gray-800">Manage devices</p>
+                <p class="text-sm text-gray-500" id="device-counts">2 admins • 3 standard devices</p>
+            </div>
+            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+        </div>
+
+        <!-- Admin-only switch container -->
+        <div id="sync-data-admin-switch-container" class="p-4 border-b border-gray-200 search-item hidden items-center justify-between" data-search-terms="sync data synchronization all">
+            <div>
+                <p class="text-base text-gray-800">Sync data across all devices</p>
+            </div>
+           <label class="ios-toggle">
+    <input type="checkbox" id="sync-data-switch">
+    <span class="slider"></span>
+</label>
+        </div>
+
+        <!-- Standard devices: sync with a specific device -->
+        <div id="sync-data-standard-link-container" class="flex items-center justify-between p-4 border-b border-gray-200 active:bg-gray-100 clickable-setting search-item hidden" data-search-terms="sync data synchronization devices">
+            <div>
+                <p class="text-base text-gray-800" id="sync-data-label">Sync data with a device</p>
+                <p class="text-sm text-gray-500" id="sync-status-display">None</p>
+            </div>
+            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+        </div>
+        
+        <div class="flex items-center justify-between p-4 border-b border-gray-200 active:bg-gray-100 clickable-setting search-item" id="edit-profile-link" data-search-terms="edit profile">
+            <p class="text-base text-gray-800">Edit Profile</p>
+            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+        </div>
+
+        <div class="flex items-center justify-between p-4 border-b border-gray-200 active:bg-gray-100 clickable-setting search-item" id="change-password-link" data-search-terms="change password security">
+            <p class="text-base text-gray-800">Change Password</p>
+            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+        </div>
+
+        <div class="flex items-center justify-between p-4 active:bg-red-50 clickable-setting search-item" id="delete-account-link" data-search-terms="delete account danger zone">
+            <p class="text-base delete-account-btn">Delete This Account</p>
+        </div>
+    </div>
+
+    <p class="section-header search-item" data-search-terms="general">GENERAL</p>
+    <div class="list-item-group">
+       
+        <div class="flex items-center justify-between p-4 border-b border-gray-200 search-item" data-search-terms="generate final accounts gfa">
+            <p class="text-base text-gray-800">Generate Final accounts</p>
+        <label class="ios-toggle">
+    <input type="checkbox" id="gfa-switch">
+    <span class="slider"></span>
+</label>
+        </div>
+        <div class="flex items-center justify-between p-4 border-b border-gray-200 active:bg-gray-100 clickable-setting search-item" id="about-link" data-search-terms="about app version">
+            <p class="text-base text-gray-800">About</p>
+            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+        </div>
+        <div class="flex items-center justify-between p-4 clickable-setting search-item" id="help-link" data-search-terms="help support faq">
+            <p class="text-base text-gray-800">Help</p>
+            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+        </div>
+    </div>
+
+    <div class="list-item-group">
+        <div class="flex items-center justify-center p-4 active:bg-gray-100 clickable-setting search-item" id="logout-link" data-search-terms="logout sign out">
+            <p class="text-base text-red-500 font-semibold">Log Out</p>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Background overlay */
+    #sync-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100%;
+        background-color: rgba(0,0,0,0.35);
+        display: none;
+        justify-content: center;
+        align-items: flex-end; /* bottom sheet */
+        z-index: 100;
+        transition: opacity 0.25s ease;
+    }
+
+    /* Bottom-sheet modal content */
+    #sync-modal .modal-content {
+        width: 100vw;
+        background-color: #fff;
+        border-radius: 18px 18px 0 0; /* iOS rounded top */
+        padding: 20px;
+        min-height: 70vh;
+        overflow-y: auto;
+        margin: -15px;
+
+        /* Start below screen */
+        transform: translateY(100%);
+        transition: transform 0.35s cubic-bezier(.25,.8,.25,1);
+    }
+
+    /* Show state */
+    #sync-modal.show {
+        display: flex;
+        opacity: 1;
+    }
+
+    #sync-modal.show .modal-content {
+        transform: translateY(0);
+    }
+
+    /* Hide (slide down) */
+    #sync-modal.hide {
+        opacity: 0;
+    }
+
+    #sync-modal.hide .modal-content {
+        transform: translateY(100%);
+    }
+
+    /* Item list styling */
+    #sync-modal .modal-item-list div {
+        padding: 14px 0;
+        cursor: pointer;
+        font-size: 16px;
+    }
+
+    #sync-modal .modal-item-list div:not(:last-child) {
+        
+
+    }
+.modal-content::before {
+    content: "";
+    display: block;
+    width: 40px;
+    height: 4px;
+    background: #c7c7cc;
+    border-radius: 2px;
+    margin: 6px auto 12px auto;
+}
+
+</style>
+
+<div id="sync-modal" class="modal" onclick="closeSyncModal()">
+    <div class="modal-content">
+        <h3 style="border-bottom: 0.5px solid #d1d1d6; padding-bottom: 5px;"class="text-xl font-semibold mb-4 text-center">Sync Data</h3>
+
+        <p class="text-sm text-gray-600 mb-4 text-center">
+            Select a profile to sync with. syncing lets you share the same accounting information with other devices.
+        </p>
+
+        <div id="sync-profile-list" class="modal-item-list max-h-60 overflow-y-auto"></div>
+
+        <button 
+            onclick="closeSyncModal()" 
+            class="w-full mt-4 py-2 bg-gray-200 text-gray-800 rounded-lg font-medium active:bg-gray-300">
+            Cancel
+        </button>
+    </div>
+</div>
+
+<script>
+// --- Firebase Initialization ---
+const firebaseConfig = {
+    apiKey: "AIzaSyAw7L6TJtF1W0PwfStEJUC4CebUyMdQU9w",
+    authDomain: "users-66be4.firebaseapp.com",
+    databaseURL: "https://users-66be4-default-rtdb.firebaseio.com",
+    projectId: "users-66be4",
+    storageBucket: "users-66be4.firebasestorage.app",
+    messagingSenderId: "776585122050",
+    appId: "1:776585122050:web:3f452a1f16dc36ee1ef21b",
+    measurementId: "G-ZS8W4BBGD5"
+};
+
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+const database = firebase.database();
+const auth = firebase.auth();
+
+// --- Global Variables ---
+const accountName = localStorage.getItem('AV_ledger_account_key');
+const username = localStorage.getItem('AV_ledger_username');
+// Note: accountEmail is no longer read from localStorage as it's fetched for security in verifyPassword
+let currentAuthStatus = 'Admin'; // default
+let allProfiles = {};
+let adminSyncAllActive = false; // whether admin forced sync-to-all
+
+// --- Utility Functions (Kept for compatibility) ---
+async function getFirebaseData(path) {
+    try {
+        const snapshot = await database.ref(path).get();
+        return snapshot.exists() ? snapshot.val() : null;
+    } catch (error) {
+        console.error("Firebase read error:", error);
+        return null;
+    }
+}
+
+
+
+async function setFirebaseData(path, value) {
+    try {
+        await database.ref(path).set(value);
+    } catch (error) {
+        console.error("Firebase write error:", error);
+        alert("Could not save data. Please try again.");
+    }
+}
+
+async function removeFirebaseData(path) {
+    try {
+        await database.ref(path).remove();
+    } catch (error) {
+        console.error("Firebase delete error:", error);
+        alert("Could not delete account. Please try again.");
+    }
+}
+
+// --- Password Verification using Firebase-stored email ---
+async function verifyPassword(password) {
+    try {
+        if (!accountName) { alert("Account name missing."); return false; }
+
+        // Fetch email from Firebase (The most secure and current source)
+        const accountData = await getFirebaseData(`accounts/${accountName}`);
+        const accountEmail = accountData?.email;
+        if (!accountEmail) { alert("Account email not found."); return false; }
+
+        const user = firebase.auth().currentUser;
+        if (!user) { alert("Not logged in."); return false; }
+
+        const credential = firebase.auth.EmailAuthProvider.credential(accountEmail, password);
+        await user.reauthenticateWithCredential(credential);
+        return true;
+    } catch (error) {
+        console.error("Authentication failed:", error);
+        return false;
+    }
+}
+
+// --- Authorization Check ---
+function applyAuthorizationRestrictions() {
+    const isStandard = currentAuthStatus === 'Standard';
+    const links = ['edit-profile-link', 'change-password-link', 'delete-account-link'];
+    
+    links.forEach(id => {
+        const linkElement = document.getElementById(id);
+        if (linkElement) {
+            if (isStandard) {
+                linkElement.classList.add('disabled-link');
+            } else {
+                linkElement.classList.remove('disabled-link');
+            }
+        }
+    });
+}
+
+// --- Sync Modal for Standard Users ---
+function openSyncModal() {
+    // If admin forced sync-to-all, standard users cannot open modal
+    if (adminSyncAllActive) {
+        alert('Syncing is currently locked by the Admin.');
+        return;
+    }
+    if (currentAuthStatus !== 'Standard') return;
+
+    const listContainer = document.getElementById('sync-profile-list');
+    listContainer.innerHTML = '';
+
+    for (const profileKey in allProfiles) {
+        const profile = allProfiles[profileKey];
+        const isCurrentDevice = (profileKey === username);
+        if (isCurrentDevice) continue;
+
+        const isSyncing = !!allProfiles[username]?.syncingTo?.[profileKey];
+        const statusText = profile.authStatus || 'Standard';
+
+        const listItem = document.createElement('div');
+        listItem.className = `flex justify-between items-center text-gray-800 hover:bg-gray-50 rounded-md p-2`;
+        listItem.innerHTML = `
+            <div style="border: 0; padding: 2px;">
+                <p class="font-medium">${profileKey} <span class="text-xs text-gray-500">(${statusText})</span></p>
+                <p class="text-xs ${isSyncing ? 'text-green-500' : 'text-blue-500'}">${isSyncing ? 'Currently Syncing' : 'Ready to Sync'}</p>
+            </div>
+            <button class="text-sm px-3 py-1 rounded-full ${isSyncing ? 'bg-red-500 text-white' : 'bg-blue-500 text-white'}" 
+                    data-profile-key="${profileKey}" 
+                    data-auth-status="${statusText}" 
+                    onclick="toggleSync('${profileKey}', '${statusText}')">
+                ${isSyncing ? 'Unsync' : 'sync'}
+            </button>
+        `;
+        listContainer.appendChild(listItem);
+    }
+
+    const modal = document.getElementById('sync-modal');
+    modal.style.display = 'flex';         // make visible immediately
+    modal.classList.remove('hide');       // remove hide animation
+    setTimeout(() => {
+        modal.classList.add('show');      // trigger slide-up animation
+    }, 10);                                // slight delay ensures CSS transition runs
+}
+
+function closeSyncModal() {
+    const modal = document.getElementById('sync-modal');
+    modal.classList.remove('show');       // start slide-down animation
+    modal.classList.add('hide');
+
+    // Wait for animation to finish before fully hiding
+    setTimeout(() => {
+        modal.style.display = 'none';
+    }, 250);
+}
+
+// --- Toggle Sync (user-level) ---
+async function toggleSync(targetProfileKey, targetAuthStatus) {
+    if (targetProfileKey === username) return;
+
+    // If admin forced global sync -> don't allow toggle
+    if (adminSyncAllActive) {
+        alert('Syncing is currently locked by the Admin.');
+        return;
+    }
+
+    const isCurrentlySyncing = !!allProfiles[username]?.syncingTo?.[targetProfileKey];
+
+    const syncPath = `accounts/${accountName}/profiles/${username}/syncingTo/${targetProfileKey}`;
+    const targetSyncPath = `accounts/${accountName}/profiles/${targetProfileKey}/syncingWith/${username}`;
+
+    if (isCurrentlySyncing) {
+        if (!confirm(`Are you sure you want to UNSYNC data with ${targetProfileKey}?`)) return;
+        await removeFirebaseData(syncPath);
+        await removeFirebaseData(targetSyncPath);
+        alert(`Data un-synced with ${targetProfileKey}.`);
+    } else {
+        let isAuthenticated = true;
+        if (targetAuthStatus === 'Admin') {
+            const password = prompt(`Enter account password to sync with ${targetProfileKey}.`);
+            if (!password) { alert('Cancelled.'); return; }
+            isAuthenticated = await verifyPassword(password);
+            if (!isAuthenticated) { alert('Authentication failed.'); return; }
+        }
+        await setFirebaseData(syncPath, true);
+        await setFirebaseData(targetSyncPath, true);
+        alert(`Data sync initiated with ${targetProfileKey}.`);
+    }
+
+    closeSyncModal();
+}
+
+// --- ADMIN: Enable sync-to-all (Wait for all updates, then toggle) ---
+async function enableAdminAllSync() {
+    if (!confirm('This will make all devices under this account share the same accounting information.')) {
+        document.getElementById('sync-data-switch').checked = false;
+        return;
+    }
+
+    try {
+        const profilesSnapshot = await getFirebaseData(`accounts/${accountName}/profiles`) || {};
+        const profileKeys = Object.keys(profilesSnapshot);
+        const updates = [];
+
+        for (const pk of profileKeys) {
+            // 1. Save current state
+            const currentSyncingTo = profilesSnapshot[pk]?.syncingTo || null;
+            updates.push(setFirebaseData(`accounts/${accountName}/profiles/${pk}/savedSyncingTo`, currentSyncingTo));
+
+            // 2. Prepare "Sync All" object (everyone except self)
+            const allDevicesObj = {};
+            for (const other of profileKeys) {
+                if (other !== pk) allDevicesObj[other] = true;
+            }
+
+            // 3. Add to update queue
+            updates.push(setFirebaseData(`accounts/${accountName}/profiles/${pk}/syncingTo`, allDevicesObj));
+            updates.push(setFirebaseData(`accounts/${accountName}/profiles/${pk}/syncedWith`, allDevicesObj));
+        }
+
+        // WAIT for all profile operations to finish first
+        await Promise.all(updates);
+
+        // FINALLY update the global status and local variable
+        await setFirebaseData(`accounts/${accountName}/settings/synchronization`, 'all');
+        
+        adminSyncAllActive = true;
+        applyAdminLockUI(true);
+        alert('All devices are now synced.');
+        
+    } catch (error) {
+        console.error("Sync failed:", error);
+        document.getElementById('sync-data-switch').checked = false;
+    }
+}
+
+// --- ADMIN: Disable sync-to-all (Restore, then toggle) ---
+async function disableAdminAllSync() {
+    if (!confirm('Restore the per-device sync choices saved before the admin lock?')) {
+        document.getElementById('sync-data-switch').checked = true;
+        return;
+    }
+
+    try {
+        const profilesSnapshot = await getFirebaseData(`accounts/${accountName}/profiles`) || {};
+        const profileKeys = Object.keys(profilesSnapshot);
+        const updates = [];
+
+        for (const pk of profileKeys) {
+            const saved = profilesSnapshot[pk]?.savedSyncingTo || null;
+            
+            // Clear current global syncs
+            updates.push(removeFirebaseData(`accounts/${accountName}/profiles/${pk}/syncingTo`));
+            updates.push(removeFirebaseData(`accounts/${accountName}/profiles/${pk}/syncedWith`));
+            
+            // Restore specific saved syncs if they existed
+            if (saved) {
+                updates.push(setFirebaseData(`accounts/${accountName}/profiles/${pk}/syncingTo`, saved));
+                for (const target in saved) {
+                    updates.push(setFirebaseData(`accounts/${accountName}/profiles/${target}/syncedWith/${pk}`, true));
+                }
+            }
+            // Cleanup the backup
+            updates.push(removeFirebaseData(`accounts/${accountName}/profiles/${pk}/savedSyncingTo`));
+        }
+
+        // WAIT for all restorations to complete
+        await Promise.all(updates);
+
+        // FINALLY update global status
+        await setFirebaseData(`accounts/${accountName}/settings/synchronization`, 'none');
+        
+        adminSyncAllActive = false;
+        applyAdminLockUI(false);
+        alert('Restored previous sync settings.');
+
+    } catch (error) {
+        console.error("Restore failed:", error);
+        document.getElementById('sync-data-switch').checked = true;
+    }
+}
+
+
+// --- Update UI to reflect admin lock (disable/enable standard sync controls) ---
+function applyAdminLockUI(locked) {
+    const standardSyncContainer = document.getElementById('sync-data-standard-link-container');
+    const syncStatusDisplay = document.getElementById('sync-status-display');
+
+    if (locked) {
+        // Disable interactions
+        standardSyncContainer.classList.add('disabled-link');
+        syncStatusDisplay.innerText = 'Disabled by Admin';
+        standardSyncContainer.onclick = null;
+    } else {
+        standardSyncContainer.classList.remove('disabled-link');
+        // This line relies on allProfiles being up-to-date, which the listener handles.
+        syncStatusDisplay.innerText = Object.keys(allProfiles[username]?.syncingTo || {}).length ? `${Object.keys(allProfiles[username].syncingTo).length} devices syncing` : 'None';
+        standardSyncContainer.onclick = openSyncModal;
+    }
+}
+
+// --- NEW/UPDATED: Use Firebase Listeners for Core Data ---
+function loadSettingsData() {
+    if (!accountName || !username) return;
+
+    // Initial UI (immediate text for better UX while waiting for data)
+    
+    document.getElementById('profile-info-display').innerText = `${username} • Fetching status...`;
+    document.getElementById('device-counts').innerText = 'Fetching counts...';
+
+    // --- Profiles listener (MOST CRITICAL DATA) ---
+    // Fetches profile list, current user status, and device counts.
+    const profilesRef = database.ref(`accounts/${accountName}/profiles`);
+    profilesRef.on('value', (snapshot) => {
+        allProfiles = snapshot.val() || {};
+        let adminCount = 0, standardCount = 0;
+
+        for (const profileKey in allProfiles) {
+            const profile = allProfiles[profileKey];
+            const status = profile.authStatus || 'Standard';
+
+
+            if (profileKey === username) currentAuthStatus = status;
+            if (status === 'Admin') adminCount++; else standardCount++;
+        }
+
+        const statusText = currentAuthStatus === 'Admin' ? 'Admin device' : 'Standard device';
+        document.getElementById('profile-info-display').innerText = `${username} • ${statusText}`;
+        document.getElementById('device-counts').innerText = `${adminCount} admins • ${standardCount} standard devices`;
+        
+        applyAuthorizationRestrictions();
+
+
+const accountRef = database.ref(`accounts/${accountName}`);
+
+accountRef.on('value', (snapshot) => {
+    const theAccount = snapshot.val() || {};
+
+    // Use data from the snapshot, not the ref
+    const accountNameDisplay = theAccount.displayName || accountName;
+
+    document.getElementById('account-name-display').innerText = accountNameDisplay;
+
+    applyAuthorizationRestrictions();
+});
+
+        // Update Standard Sync UI
+        const standardSyncContainer = document.getElementById('sync-data-standard-link-container');
+        const syncStatusDisplay = document.getElementById('sync-status-display');
+        
+        // Update display logic based on authorization
+        if (currentAuthStatus === 'Admin') {
+            document.getElementById('sync-data-admin-switch-container').style.display = 'flex';
+            standardSyncContainer.style.display = 'none';
+        } else {
+            document.getElementById('sync-data-admin-switch-container').style.display = 'none';
+            standardSyncContainer.style.display = 'flex';
+            
+            const devicesSyncing = Object.keys(allProfiles[username]?.syncingTo || {}).length;
+            syncStatusDisplay.innerText = devicesSyncing ? `${devicesSyncing} devices syncing` : 'None';
+            
+            // Re-attach openSyncModal handler if it's not admin locked
+            if (!adminSyncAllActive) standardSyncContainer.onclick = openSyncModal;
+            else standardSyncContainer.onclick = null;
+        }
+
+        // Must call applyAdminLockUI here to ensure standard sync status display is correct on initial load
+        applyAdminLockUI(adminSyncAllActive);
+    });
+
+    // --- Settings / Synchronization Listener (LIGHTWEIGHT) ---
+    // Fetches synchronization status and GFA status only.
+    database.ref(`accounts/${accountName}/settings`).on('value', (snapshot) => {
+        const settings = snapshot.val() || {};
+
+        const adminSyncContainer = document.getElementById('sync-data-admin-switch-container');
+        const standardSyncContainer = document.getElementById('sync-data-standard-link-container');
+
+        // Read synchronization from settings path
+        const syncStatus = settings.synchronization || 'none';
+        adminSyncAllActive = (syncStatus === 'all');
+
+        if (currentAuthStatus === 'Admin') {
+            const syncSwitch = document.getElementById('sync-data-switch');
+            // prevent multiple handlers
+            syncSwitch.removeEventListener('change', handleSyncSwitchChange); 
+            syncSwitch.checked = adminSyncAllActive;
+            syncSwitch.addEventListener('change', handleSyncSwitchChange);
+        }
+
+        // Apply admin lock UI if necessary (this also updates standard sync display text)
+        applyAdminLockUI(adminSyncAllActive);
+
+        // GFA switch
+        const gfaSwitch = document.getElementById('gfa-switch');
+        const gfaStatus = settings[username]?.GFA;
+        gfaSwitch.removeEventListener('change', handleGFASwitchChange);
+        gfaSwitch.checked = !!gfaStatus;
+        gfaSwitch.addEventListener('change', handleGFASwitchChange);
+    });
+    
+    // --- Profile URL Listener (LIGHTWEIGHT) ---
+    // Fetches the profile URL for the icon display only.
+    database.ref(`accounts/${accountName}/url`).on('value', (snapshot) => {
+        const profileUrl = snapshot.val();
+        
+        // Profile Icon Update
+        const profileIcon = document.getElementById('profile-icon');
+        const profileIconSvg = document.getElementById('profile-icon-svg');
+        if (profileUrl) {
+            profileIcon.src = profileUrl;
+            profileIcon.classList.remove('hidden');
+            profileIconSvg.classList.add('hidden');
+        } else {
+            profileIcon.classList.add('hidden');
+            profileIconSvg.classList.remove('hidden');
+        }
+    });
+}
+
+// --- Switch Handlers ---
+async function handleGFASwitchChange(event) {
+    const isChecked = event.target.checked;
+    const path = `accounts/${accountName}/settings/${username}/GFA`;
+    await setFirebaseData(path, isChecked);
+}
+
+async function handleSyncSwitchChange(event) {
+    if (currentAuthStatus !== 'Admin') return;
+    const isChecked = event.target.checked;
+
+    // when toggled on -> perform enableAdminAllSync logic; when off -> disableAdminAllSync
+    if (isChecked) {
+        await enableAdminAllSync();
+    } else {
+        await disableAdminAllSync();
+    }
+}
+
+// --- Click Handlers ---
+document.getElementById('manage-devices-link').onclick = () => window.location.href = 'manage-devices.html';
+
+document.getElementById('about-link').onclick = () => window.location.href = 'about.html';
+document.getElementById('help-link').onclick = () => window.location.href = 'help.html';
+document.getElementById('logout-link').onclick = () => {
+    if(confirm('Are you sure you want to log out?')) {
+        localStorage.clear(); 
+        window.location.href = 'index.html';
+    }
+};
+
+const linksToProtect = ['edit-profile-link', 'change-password-link', 'delete-account-link'];
+linksToProtect.forEach(id => {
+    document.getElementById(id).onclick = async (event) => {
+        const element = event.currentTarget;
+        if (element.classList.contains('disabled-link')) {
+            alert('This action is restricted for Standard users.');
+            return;
+        }
+        if (id === 'edit-profile-link') window.location.href = 'edit-profile.html';
+        else if (id === 'change-password-link') window.location.href = 'change-pass.html';
+        else if (id === 'delete-account-link') await handleDeleteAccount();
+    };
+});
+
+// --- Delete Account ---
+async function handleDeleteAccount() {
+    if (!confirm('🛑 Are you sure you want to delete this account? This action is irreversible.')) return;
+
+    const password = prompt('Enter your password to confirm account deletion:');
+    if (!password) { alert('This account has been successfully deleted.'); return; }
+
+    const isAuthenticated = await verifyPassword(password);
+    if (!isAuthenticated) { alert('Authentication failed.'); return; }
+
+    const accountPath = `accounts/${accountName}`;
+    await removeFirebaseData(accountPath);
+    localStorage.clear();
+    window.location.href = 'index.html';
+}
+
+// --- Search: fixed so top profile block (profile-header-group) won't get hidden by group logic ---
+function filterSettings() {
+    const filter = document.getElementById('search-input').value.toLowerCase();
+    const items = document.querySelectorAll('.search-item');
+
+    items.forEach(item => {
+        let itemText = item.textContent.toLowerCase();
+        let searchTerms = item.getAttribute('data-search-terms')?.toLowerCase() || "";
+        if (itemText.includes(filter) || searchTerms.includes(filter)) item.classList.remove('hidden-search');
+        else item.classList.add('hidden-search');
+    });
+
+    document.querySelectorAll('.list-item-group').forEach(group => {
+        // skip the top profile header group to prevent profile info from disappearing
+        if (group.id === 'profile-header-group') {
+            // ensure header remains visible if it contains visible items
+            const anyVisible = group.querySelectorAll('.search-item:not(.hidden-search)').length > 0;
+            if (!anyVisible) {
+                // keep it visible (previous bug) — do nothing
+            } else {
+                group.classList.remove('hidden-search');
+            }
+            return;
+        }
+
+        const visible = group.querySelectorAll('.search-item:not(.hidden-search)');
+        const prevHeader = group.previousElementSibling;
+        if (visible.length === 0) { 
+            group.classList.add('hidden-search'); 
+            if(prevHeader?.classList.contains('section-header')) prevHeader.classList.add('hidden-search'); 
+        } else { 
+            group.classList.remove('hidden-search'); 
+            if(prevHeader?.classList.contains('section-header')) prevHeader.classList.remove('hidden-search'); 
+        }
+    });
+}
+
+// --- Expose Functions ---
+window.toggleSync = toggleSync;
+window.closeSyncModal = closeSyncModal;
+window.filterSettings = filterSettings;
+
+// --- Init (The Optimization) ---
+// Call the function immediately to start data fetching as soon as possible.
+loadSettingsData();
+</script>
+</body>
+</html>

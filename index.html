@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=0.8 , maximum-scale=0.8, user-scalable=no" />
+    <title>Avanti-Ledger</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
+
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-database-compat.js"></script>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#3f72af">
+
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("/service-worker.js")
+        .then(reg => console.log("Service worker registered:", reg))
+        .catch(err => console.error("Service worker error:", err));
+    });
+  }
+</script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .glass-panel {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .scan-region video { border-radius: 0.75rem; object-fit: cover; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px);} to { opacity: 1; transform: translateY(0);} }
+        .loader { border: 3px solid #f3f3f3; border-radius: 50%; border-top: 3px solid #4f46e5; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0%{transform:rotate(0)}100%{transform:rotate(360deg)} }
+    </style>
+</head>
+<body class=" h-screen flex flex-col overflow-hidden">
+    <div id="toast" class="fixed top-5 right-5 z-50 transform translate-x-full transition-transform duration-300 max-w-sm w-full bg-white shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5">
+        <div class="flex-1 w-0 p-4">
+            <div class="flex items-start">
+                <div class="flex-shrink-0 pt-0.5">
+                    <i id="toast-icon" class="fas fa-check-circle text-green-500 text-lg"></i>
+                </div>
+                <div class="ml-3 flex-1">
+                    <p id="toast-title" class="text-sm font-medium text-gray-900">Success</p>
+                    <p id="toast-message" class="mt-1 text-sm text-gray-500">Operation completed.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <nav class="bg-white border-b border-gray-200 z-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center gap-3">
+                    <img src="https://ik.imagekit.io/3mtmeexff/IMG_8590_08guCef1U.jpeg?updatedAt=1755378870759" style="width: 50px; height: 50px; border-radius: 10px;">
+                    <span class="font-bold text-xl tracking-tight text-slate-900">Avanti Ledger</span>
+                </div>
+                <div class="flex items-center">
+                    <button id="nav-logout" class="hidden text-sm font-medium text-gray-500 hover:text-red-600 transition-colors">
+                        Sign Out <i class="fas fa-sign-out-alt ml-1"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-1 relative overflow-y-auto w-full flex items-center justify-center p-4">
+
+        <div id="view-auth" class="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden fade-in relative">
+            <div id="auth-loader" class="absolute inset-0 bg-white/80 z-10 flex items-center justify-center hidden"><div class="loader"></div></div>
+
+            <div class="px-8 pt-8 pb-6 text-center">
+                <h2 class="text-2xl font-bold text-gray-900">Welcome</h2>
+                <p class="text-gray-500 mt-2 text-sm">Choose your preferred way to access your account.</p>
+            </div>
+
+            <div class="flex border-b border-gray-100">
+                <button onclick="switchTab('signin')" id="tab-signin" class="flex-1 py-3 text-sm font-medium text-blue-900 border-b-2 border-blue-900 focus:outline-none">Sign In</button>
+                <button onclick="switchTab('signup')" id="tab-signup" class="flex-1 py-3 text-sm font-medium text-blue-900 border-b-2  focus:outline-none">Create Account</button>
+            </div>
+
+            <div class="p-8">
+
+                <div id="section-signin">
+                    <form id="form-login" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Account name or Email or Cell Number</label>
+                            <input type="text" id="login-identifier" class="block w-full px-4 py-2 text-gray-700 bg-gray-50 border border-gray-200 rounded-lg" placeholder="account name or Email or Cell number" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Password</label>
+                            <input type="password" id="login-password" class="block w-full px-4 py-2 text-gray-700 bg-gray-50 border border-gray-200 rounded-lg" placeholder="••••••••" required>
+                        </div>
+                        <button type="submit" class="w-full bg-blue-900 hover:bg-blue-800 text-white font-semibold py-2.5 rounded-lg">
+                            Sign In Securely
+                        </button>
+                    </form>
+
+                    <div class="relative my-6">
+                        <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-gray-200"></div></div>
+                        <div class="relative flex justify-center text-sm"><span class="px-2 bg-white text-gray-400">Or connect via Device Link</span></div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <button onclick="showScanView()" class="flex flex-col items-center justify-center p-4 border border-gray-200 rounded-xl hover:bg-gray-50">
+                            <div class="bg-blue-50 text-blue-900 p-3 rounded-full mb-2"><i class="fas fa-qrcode text-xl"></i></div>
+                            <span class="text-sm font-medium text-gray-700">Scan QR</span>
+                        </button>
+                        <button onclick="showCodeView()" class="flex flex-col items-center justify-center p-4 border border-gray-200 rounded-xl hover:bg-gray-50">
+                            <div class="bg-blue-50 text-blue-900 p-3 rounded-full mb-2"><i class="fas fa-keyboard text-xl"></i></div>
+                            <span class="text-sm font-medium text-gray-700">Enter Code</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="section-signup" class="hidden space-y-4">
+                    <form id="form-signup" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Account Name</label>
+                            <input type="text" id="signup-name" class="block w-full px-4 py-2 text-gray-700 bg-gray-50 border border-gray-200 rounded-lg" placeholder="John Doe" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Email or Cell Number</label>
+                            <input type="text" id="signup-contact" class="block w-full px-4 py-2 text-gray-700 bg-gray-50 border border-gray-200 rounded-lg" placeholder="name@example.com or +2609..." required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Password</label>
+                            <input type="password" id="signup-password" class="block w-full px-4 py-2 text-gray-700 bg-gray-50 border border-gray-200 rounded-lg" placeholder="Create a strong password" required>
+                        </div>
+                        <div class="text-xs text-gray-500 bg-blue-100 p-3 rounded border border-blue-200">
+                            <i class="fas fa-fingerprint mr-1 text-blue-700"></i>
+                            We will register this device as: <span id="detected-device-name" class="font-bold text-gray-700">Detecting...</span>
+                        </div>
+                        <button type="submit" class="w-full bg-blue-900 hover:bg-blue-800 text-white font-semibold py-2.5 rounded-lg">
+                            Create Account
+                        </button>
+                    </form>
+                </div>
+
+                <div id="section-scan" class="hidden">
+                    <div class="mb-4">
+                        <button onclick="backToAuth()" class="text-sm text-gray-500 hover:text-gray-900 mb-2"><i class="fas fa-arrow-left mr-1"></i> Back</button>
+                        <h3 class="font-bold text-lg">Scan Access QR</h3>
+                        <p class="text-xs text-gray-500">Scan the QR code generated by the account admin.</p>
+                    </div>
+                    <div id="reader" class="w-full bg-black rounded-lg overflow-hidden h-64 scan-region"></div>
+                    <p id="scan-status" class="text-center text-xs text-gray-400 mt-2">Waiting for camera permission...</p>
+                </div>
+
+                <div id="section-code" class="hidden">
+                    <div class="mb-4">
+                        <button onclick="backToAuth()" class="text-sm text-gray-500 hover:text-gray-900 mb-2"><i class="fas fa-arrow-left mr-1"></i> Back</button>
+                        <h3 class="font-bold text-lg">Enter Unique Code</h3>
+                        <p class="text-xs text-gray-500">Enter the 6-character code from the account admin.</p>
+                    </div>
+                    <form id="form-code">
+                        <input type="text" id="access-code" class="block w-full px-4 py-3 text-center text-2xl tracking-widest uppercase font-mono bg-gray-50 border border-gray-200 rounded-lg mb-4" placeholder="X Y Z 1 2 3" maxlength="6" required>
+                        <button type="submit" class="w-full bg-blue-900 hover:bg-blue-800 text-white font-semibold py-2.5 rounded-lg">
+                            Verify Code
+                        </button>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+
+        <div id="view-identify" class="hidden w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden fade-in p-8">
+            <h2 class="text-2xl font-bold text-gray-900 mb-2">Who is this?</h2>
+            <p class="text-sm text-gray-500 mb-6">You've connected to <span id="connected-account-name" class="font-bold text-blue-900">Unknown Account</span>.</p>
+
+            <div id="profiles-list" class="mb-4"></div>
+
+            <form id="form-identify">
+                <div class="mb-4">
+                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Your Name / Username</label>
+                    <input type="text" id="identity-username" class="block w-full px-4 py-2 text-gray-700 bg-gray-50 border border-gray-200 rounded-lg" placeholder="e.g. John's Profile" required>
+                </div>
+                <div class="text-xs text-gray-500 bg-blue-100 p-3 rounded border border-blue-200 mb-4">
+                    Device (detected): <span id="identify-device-name" class="font-bold">Detecting...</span>
+                </div>
+                <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2.5 rounded-lg">
+                    Complete Login and Continue
+                </button>
+            </form>
+        </div>
+
+    </main>
+
+ <script>
+    // ---------- Firebase config ----------
+    const firebaseConfig = {
+        apiKey: "AIzaSyAw7L6TJtF1W0PwfStEJUC4CebUyMdQU9w",
+        authDomain: "users-66be4.firebaseapp.com",
+        databaseURL: "https://users-66be4-default-rtdb.firebaseio.com",
+        projectId: "users-66be4",
+        storageBucket: "users-66be4.firebasestorage.app",
+        messagingSenderId: "776585122050",
+        appId: "1:776585122050:web:3f452a1f16dc36ee1ef21b",
+        measurementId: "G-ZS8W4BBGD5"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const rdb = firebase.database();
+    const auth = firebase.auth();
+
+    // ---------- Globals ----------
+    let currentDeviceName = 'unknown-device';
+    let fpPromise = null;
+    let scanned = false;
+    let qrScanner = null;
+    let connectedAccount = null; // accountKey string after verification
+    let connectedAccountData = null; // account data object
+    let currentUsername = null; // holds selected/created username
+
+    // --- Device Name Generator ---
+    function getOSSpecificName() {
+        const userAgent = navigator.userAgent || "";
+        let os = 'Unknown OS';
+        if (userAgent.match(/Mobi/i) || userAgent.match(/Android/i) || userAgent.match(/iPhone/i) || userAgent.match(/iPad/i)) {
+            if (userAgent.match(/iPhone/i) || userAgent.match(/iPad/i)) os = 'iPhone/iPad';
+            else if (userAgent.match(/Android/i)) os = 'Android';
+            else os = 'Mobile';
+        } else if (userAgent.match(/Win/i)) {
+            os = 'Windows';
+        } else if (userAgent.match(/Mac/i)) {
+            os = 'Mac';
+        } else if (userAgent.match(/Linux/i)) {
+            os = 'Linux';
+        }
+        return os;
+    }
+
+    // Initialize FingerprintJS and get visitor ID (non-blocking)
+    (function initFingerprint(){
+        try {
+            fpPromise = FingerprintJS.load();
+            fpPromise.then(fp => fp.get()).then(result => {
+                const osName = getOSSpecificName();
+                const fpShort = (result && result.visitorId) ? result.visitorId.slice(0, 8) : '';
+                currentDeviceName = `${osName}`;
+                const el = document.getElementById('detected-device-name');
+                if(el) el.textContent = currentDeviceName;
+                const el2 = document.getElementById('identify-device-name');
+                if(el2) el2.textContent = currentDeviceName;
+            }).catch(err=>{
+                console.warn('Fingerprint init error', err);
+                currentDeviceName = 'Unknown Device';
+                const el = document.getElementById('detected-device-name');
+                if(el) el.textContent = currentDeviceName;
+                const el2 = document.getElementById('identify-device-name');
+                if(el2) el2.textContent = currentDeviceName;
+            });
+        } catch (e) {
+            console.warn('Fingerprint not available', e);
+            currentDeviceName = 'Unknown Device';
+            const el = document.getElementById('detected-device-name');
+            if(el) el.textContent = currentDeviceName;
+            const el2 = document.getElementById('identify-device-name');
+            if(el2) el2.textContent = currentDeviceName;
+        }
+    })();
+
+    // --- Post-Login helper ---
+    function completeLogin(accountKey, username, authStatus) {
+        try {
+            localStorage.setItem('AV_ledger_account_key', accountKey);
+            localStorage.setItem('AV_ledger_username', username);
+            localStorage.setItem('AV_ledger_auth_status', authStatus);
+        } catch (e) {
+            console.warn('LocalStorage write failed', e);
+        }
+        window.location.href = '/dashboard.html';
+    }
+
+    // --- Auto-Login check ---
+    (function checkAutoLogin() {
+        const accountKey = localStorage.getItem('AV_ledger_account_key');
+        const username = localStorage.getItem('AV_ledger_username');
+        if (accountKey && username) {
+            console.log(`Auto-logging in as ${username} on account ${accountKey}`);
+            setTimeout(() => {
+                const loader = document.getElementById('auth-loader');
+                if (loader) loader.classList.remove('hidden');
+                window.location.href = 'dashboard.html';
+            }, 100);
+        }
+    })();
+
+    // ---------- UI helpers ----------
+    function toast(title, message, ok=true){
+        const t = document.getElementById('toast');
+        if (!t) return;
+        document.getElementById('toast-title').textContent = title;
+        document.getElementById('toast-message').textContent = message;
+        document.getElementById('toast-icon').className = ok ? 'fas fa-check-circle text-green-500 text-lg' : 'fas fa-exclamation-circle text-red-500 text-lg';
+        t.classList.remove('translate-x-full');
+        setTimeout(()=> t.classList.add('translate-x-full'), 3500);
+    }
+
+    function switchTab(tab){
+        document.getElementById('section-signup').classList.toggle('hidden', tab !== 'signup');
+        document.getElementById('section-signin').classList.toggle('hidden', tab !== 'signin');
+        document.getElementById('tab-signin').classList.toggle('text-indigo-600', tab==='signin');
+        document.getElementById('tab-signup').classList.toggle('text-indigo-600', tab==='signup');
+        document.getElementById('tab-signin').classList.toggle('border-b-2', tab==='signin');
+        document.getElementById('tab-signup').classList.toggle('border-b-2', tab==='signup');
+    }
+
+    function showScanView(){
+        hideAllSubViews();
+        document.getElementById('section-scan').classList.remove('hidden');
+        startScanner();
+    }
+    function showCodeView(){
+        hideAllSubViews();
+        document.getElementById('section-code').classList.remove('hidden');
+        stopScanner();
+    }
+    function backToAuth(){
+        hideAllSubViews();
+        stopScanner();
+        document.getElementById('section-signin').classList.remove('hidden');
+        document.getElementById('view-auth').classList.remove('hidden');
+        document.getElementById('view-identify').classList.add('hidden');
+        connectedAccount = null;
+        connectedAccountData = null;
+    }
+
+    function hideAllSubViews(){
+        const ids = ['section-scan','section-code','section-signin','section-signup'];
+        ids.forEach(id => { const el = document.getElementById(id); if(el) el.classList.add('hidden'); });
+        document.getElementById('view-auth').classList.remove('hidden');
+        document.getElementById('view-identify').classList.add('hidden');
+    }
+
+    // ---------- Utility: sanitize account key ----------
+    function sanitizeAccountKey(name){
+        return String(name || '')
+            .trim()
+            .toLowerCase()
+            .replace(/\s+/g,'_')
+            .replace(/[^a-z0-9_\-]/g,'')
+            .slice(0,60) || 'account_' + Math.random().toString(36).slice(2,8);
+    }
+
+    // ---------- Signup flow ----------
+    document.getElementById("form-signup").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const accountName = document.getElementById("signup-name").value.trim();
+        const contact = document.getElementById("signup-contact").value.trim();
+        const password = document.getElementById("signup-password").value;
+        if (!accountName || !contact || !password) { toast("Missing fields", "Fill all fields", false); return; }
+
+        let emailToUse = "";
+        let phoneNumber = "";
+        if (contact.includes("@")) {
+            emailToUse = contact;
+        } else {
+            phoneNumber = contact.replace(/\D/g, "");
+            emailToUse = phoneNumber + "@phone.avanti";
+        }
+
+        try {
+            const cred = await auth.createUserWithEmailAndPassword(emailToUse, password);
+            const accountKey = sanitizeAccountKey(accountName);
+            await rdb.ref("accounts/" + accountKey).set({
+                displayName: accountName,
+                email: emailToUse,
+                phone: phoneNumber,
+                uid: cred.user.uid,
+                createdAt: Date.now()
+            });
+            connectedAccount = accountKey;
+            connectedAccountData = {
+                displayName: accountName,
+                email: emailToUse
+            };
+            openIdentifyForNewAccount(true);
+            toast("Account Created", "Create your first profile");
+        } catch (err) {
+            toast("Sign Up Error", err.message || String(err), false);
+        }
+    });
+
+    // ---------- Identify view helpers ----------
+    function openIdentifyForNewAccount(isNew=false){
+        document.getElementById('view-auth').classList.add('hidden');
+        document.getElementById('view-identify').classList.remove('hidden');
+        renderProfilesList();
+        document.getElementById('identity-username').value = connectedAccountData?.displayName || '';
+        const el = document.getElementById('identify-device-name');
+        if(el) el.textContent = currentDeviceName;
+    }
+
+    async function renderProfilesList(){
+        const listDiv = document.getElementById('profiles-list');
+        if(!listDiv) return;
+        listDiv.innerHTML = '';
+        if(!connectedAccount) return;
+        const snap = await rdb.ref('accounts/' + connectedAccount + '/profiles').get();
+        if(!snap.exists()){
+            listDiv.innerHTML = '<div class="text-xs text-gray-400 mb-3">No profiles yet for this account. Create one below.</div>';
+            return;
+        }
+        const profiles = snap.val();
+        const container = document.createElement('div');
+        container.className = 'space-y-2';
+        Object.keys(profiles).forEach(username => {
+            const p = profiles[username];
+            const btn = document.createElement('button');
+            btn.className = 'w-full text-left px-4 py-2 bg-gray-50 rounded-lg flex justify-between items-center hover:bg-indigo-50 transition-colors';
+            btn.innerHTML = `<div><div class="font-medium">${username}</div><div class="text-xs text-gray-500">${p.authStatus || 'Standard'} • ${p.deviceName || ''}</div></div><div><i class="fas fa-sign-in-alt text-indigo-600"></i></div>`;
+            btn.onclick = () => onSelectExistingProfile(username, p);
+            container.appendChild(btn);
+        });
+        listDiv.appendChild(container);
+    }
+
+    // ---------- FIXED: Profile selection & admin reauth ----------
+    async function onSelectExistingProfile(username, profileObj){
+        // set current selection context
+        currentUsername = username;
+        const finalAuthStatus = profileObj?.authStatus || 'Standard';
+
+        // If Admin, require password re-entry (reauthenticate current Firebase user)
+        if (finalAuthStatus === 'Admin') {
+            const pw = prompt('Admin profile selected. Enter account password to continue:');
+            if (!pw) {
+                toast('Cancelled','Password required for Admin', false);
+                return;
+            }
+
+            try {
+                // Prefer reauthenticating the existing signed-in user
+                const user = auth.currentUser;
+                // Determine email to use for credential: prefer user.email, fallback to connectedAccountData.email
+                const emailForReauth = (user && user.email) ? user.email : (connectedAccountData && connectedAccountData.email) ? connectedAccountData.email : null;
+                if (!emailForReauth) {
+                    toast('Auth Error','No email available to verify admin password', false);
+                    return;
+                }
+
+                const credential = firebase.auth.EmailAuthProvider.credential(emailForReauth, pw);
+
+                // If a user is signed in, reauthenticate that user. If not, fall back to signInWithEmailAndPassword (rare).
+                if (user) {
+                    await user.reauthenticateWithCredential(credential);
+                } else {
+                    // fallback: sign in with the provided email/password (may be necessary in some edge cases)
+                    await auth.signInWithEmailAndPassword(emailForReauth, pw);
+                }
+
+                toast('Admin Login Successful','Redirecting to Home...');
+                completeLogin(connectedAccount, username, finalAuthStatus);
+                return;
+            } catch (err) {
+                console.error('Admin reauth failed', err);
+                toast('Wrong password','Admin password did not match', false);
+                return;
+            }
+        }
+
+        // Standard profile: just sign in (no password prompt)
+        toast('Signed in','Signed in as ' + username + '. Redirecting...');
+        completeLogin(connectedAccount, username, finalAuthStatus);
+    }
+
+    // ---------- Identify form submit (create or use profile) ----------
+    document.getElementById('form-identify').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const username = document.getElementById('identity-username').value.trim();
+        if(!username) { toast('Missing name','Enter a name for this profile', false); return; }
+        if(!connectedAccount){
+            toast('No account','Internal error: no connected account', false); return;
+        }
+
+        const profileRef = rdb.ref('accounts/' + connectedAccount + '/profiles/' + username);
+        const snap = await profileRef.get();
+        let authStatus = 'Standard';
+
+        if(snap.exists()){
+            // Existing profile: update device and proceed to redirect
+            const p = snap.val();
+            authStatus = p.authStatus || 'Standard';
+            const existingDevice = p.deviceName || '';
+            const parts = existingDevice ? existingDevice.split('&').map(s=>s.trim()).filter(Boolean) : [];
+            if(!parts.includes(currentDeviceName)) parts.push(currentDeviceName);
+            const newDeviceName = parts.join(' & ');
+            await profileRef.update({ deviceName: newDeviceName });
+            toast('Signed in','Welcome back, '+username + '. Redirecting...');
+            completeLogin(connectedAccount, username, authStatus);
+            return;
+        } else {
+            // Create new profile; first profile becomes Admin
+            const profilesSnap = await rdb.ref('accounts/' + connectedAccount + '/profiles').get();
+            authStatus = (profilesSnap.exists() && Object.keys(profilesSnap.val()).length > 0) ? 'Standard' : 'Admin';
+            await profileRef.set({
+                deviceName: currentDeviceName,
+                authStatus: authStatus,
+                createdAt: Date.now()
+            });
+            toast('Profile created', username + ' ('+authStatus+')' + '. Redirecting...');
+            completeLogin(connectedAccount, username, authStatus);
+            return;
+        }
+    });
+
+    // ---------- Manual sign-in ----------
+    document.getElementById("form-login").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const identifier = document.getElementById("login-identifier").value.trim();
+        const password = document.getElementById("login-password").value;
+        if (!identifier || !password) { toast("Missing fields", "Fill all fields", false); return; }
+
+        let emailToUse = "";
+
+        if (identifier.includes("@")) {
+            emailToUse = identifier;
+        } else if (/^\+?\d+$/.test(identifier)) {
+            const phoneDigits = identifier.replace(/\D/g, "");
+            emailToUse = phoneDigits + "@phone.avanti";
+        } else {
+            // Lookup by account/display name
+            const usersSnap = await rdb.ref("accounts").once("value");
+            let found = false;
+            usersSnap.forEach((child) => {
+                const data = child.val();
+                if (data.displayName && data.displayName.toLowerCase() === identifier.toLowerCase()) {
+                    emailToUse = data.email;
+                    found = true;
+                }
+            });
+            if (!found) { toast("Not Found", "Account name does not exist", false); return; }
+        }
+
+        try {
+            // Sign in the user
+            await auth.signInWithEmailAndPassword(emailToUse, password);
+
+            // Find accountKey in DB
+            const accountsSnap = await rdb.ref("accounts").orderByChild("email").equalTo(emailToUse).get();
+            if (!accountsSnap.exists()) { toast("Login Failed", "Associated account not found", false); return; }
+            const accountKey = Object.keys(accountsSnap.val())[0];
+            connectedAccount = accountKey;
+            connectedAccountData = accountsSnap.val()[accountKey];
+
+            const el = document.getElementById("connected-account-name");
+            if (el) el.textContent = connectedAccountData.displayName || accountKey;
+
+            document.getElementById("view-auth").classList.add("hidden");
+            document.getElementById("view-identify").classList.remove("hidden");
+
+            await renderProfilesList();
+            toast("Account Verified", "Select a profile to finish login");
+        } catch (err) {
+            toast("Login Failed", err.message || String(err), false);
+        }
+    });
+
+    // ---------- QR scanner (html5-qrcode) ----------
+    function startScanner(){
+        if(qrScanner) return;
+        const html5QrCode = new Html5Qrcode("reader");
+        qrScanner = html5QrCode;
+        const config = { fps: 10, qrbox: {width: 300, height: 200} };
+        html5QrCode.start(
+            { facingMode: "environment" },
+            config,
+            qrCodeMessage => {
+                if(scanned) return;
+                scanned = true;
+                handleScannedQr(qrCodeMessage);
+            },
+            errorMessage => { /* ignore scan errors */ }
+        ).then(()=> {
+            const s = document.getElementById('scan-status');
+            if(s) s.textContent = 'Scanning...';
+        }).catch(err=>{
+            const s = document.getElementById('scan-status');
+            if(s) s.textContent = 'Camera permission denied or not available.';
+            console.warn('QR start error', err);
+        });
+    }
+    function stopScanner(){
+        scanned = false;
+        if(!qrScanner) return;
+        qrScanner.stop().then(()=> { qrScanner.clear(); qrScanner = null; const s = document.getElementById('scan-status'); if(s) s.textContent = 'Stopped'; }).catch(()=>{ qrScanner = null; });
+    }
+
+    async function handleScannedQr(payload){
+        let data = null;
+        try { data = JSON.parse(payload); } catch(e){}
+        if(!data || !data.type){
+            toast('Invalid QR','Scanned QR is not valid', false);
+            stopScanner();
+            backToAuth();
+            return;
+        }
+        if(data.type === 'login' && data.account){
+            const accSnap = await rdb.ref('accounts/' + data.account).get();
+            if(!accSnap.exists()){ toast('Account not found','QR refers to unknown account', false); stopScanner(); backToAuth(); return; }
+            connectedAccount = data.account;
+            connectedAccountData = accSnap.val();
+            const nameEl = document.getElementById('connected-account-name');
+            if(nameEl) nameEl.textContent = connectedAccountData.displayName || connectedAccount;
+            document.getElementById('view-auth').classList.add('hidden');
+            document.getElementById('view-identify').classList.remove('hidden');
+            await renderProfilesList();
+            toast('QR accepted','Choose or create a profile to complete login');
+            stopScanner();
+        } else {
+            toast('Unsupported QR','Scanned QR does not contain login info', false);
+            stopScanner();
+            backToAuth();
+        }
+    }
+
+    // ---------- Code input ----------
+    document.getElementById('form-code').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const code = document.getElementById('access-code').value.trim().toUpperCase();
+        if(!code || code.length !== 6){ toast('Invalid code','Enter a 6-character code', false); return; }
+
+        const accountsSnap = await rdb.ref('accounts').get();
+        if(!accountsSnap.exists()){ toast('Invalid code','No account codes found', false); return; }
+        let found = null;
+        accountsSnap.forEach(accSnap=>{
+            const acc = accSnap.val();
+            if(acc.codes && acc.codes[code]){
+                found = { key: accSnap.key, data: acc, meta: acc.codes[code] };
+            }
+        });
+        if(!found){ toast('Code not found','Invalid or expired code', false); return; }
+        if(found.meta.expiresAt && Date.now() > found.meta.expiresAt){
+            toast('Code expired','This code has expired', false);
+            return;
+        }
+
+        connectedAccount = found.key;
+        connectedAccountData = found.data;
+        const nameEl = document.getElementById('connected-account-name');
+        if(nameEl) nameEl.textContent = connectedAccountData.displayName || connectedAccount;
+        document.getElementById('view-auth').classList.add('hidden');
+        document.getElementById('view-identify').classList.remove('hidden');
+        await renderProfilesList();
+        toast('Code accepted', 'Select or create profile to complete login');
+    });
+
+    // ---------- Cleanup ----------
+    window.addEventListener('beforeunload', () => {
+        if(qrScanner) try { qrScanner.stop(); } catch(e){}
+    });
+
+    console.log('Avanti-Ledger login script loaded. Local Storage auto-login enabled.');
+</script>
+</body>
+</html>

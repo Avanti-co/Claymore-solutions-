@@ -1,0 +1,20 @@
+{
+  "name": "Avanti Ledger",
+  "short_name": "Avanti Ledger",
+  "start_url": "loading.html",
+  "display": "standalone",
+  "background_color": "#f5f7fb",
+  "theme_color": "#3f72af",
+  "icons": [
+    {
+      "src": "https://ik.imagekit.io/3mtmeexff/IMG_0905.jpeg?updatedAt=1764942582222",
+      "sizes": "192x192",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "ledger-logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

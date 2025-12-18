@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <title>Notes System (iOS Replica - Pro Editor)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#3f72af">
+
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("/service-worker.js")
+        .then(reg => console.log("Service worker registered:", reg))
+        .catch(err => console.error("Service worker error:", err));
+    });
+  }
+</script>
+   
+    <style>
+ :root{
+      --card-bg: rgba(255,255,255,0.9);
+      --muted: #6b7280;
+      --accent: #0ea5a4; /* teal-ish */
+      --glass: rgba(255,255,255,0.6);
+     
+            --system-blue: #007AFF;
+            --system-red: #FF3B30;
+            --bg: #F2F2F7;
+            --card: #FFFFFF;
+            --border-color: #E5E5E5;
+            --text-color: #000000;
+            --muted-color: #8E8E93;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+        }
+        /* --- Core iOS Styling & Reset --- */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+            -webkit-font-smoothing: antialiased;
+            background-color: #f2f2f7; 
+            margin: 0;
+        }
+
+        /* Phone Screen Container */
+        .phone-container {
+            width: 100%;
+            max-width: 400px;
+            height: 100dvh; 
+            position: relative;
+            background-color: #f2f2f7; 
+            overflow: hidden; 
+            margin: 0 auto; 
+            box-shadow: 0 0 20px rgba(0,0,0,0.3); 
+        }
+
+        /* --- View Management (Simulating iOS Push Navigation) --- */
+        .view {
+            width: 100%;
+            height: 100%; 
+            position: absolute;
+            top: 0;
+            transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1); 
+            background-color: inherit;
+            will-change: transform; 
+            display: flex; 
+            flex-direction: column;
+        }
+
+        /* Navigation Classes */
+        .view.current { transform: translateX(0%); }
+        .view.left { transform: translateX(-100%); }
+        .view.right { transform: translateX(100%); }
+
+        /* iOS Separator Lines */
+        .ios-header-separator { border-bottom: 0.5px solid #d1d1d6; }
+        .ios-toolbar { border-top: 0.5px solid #d1d1d6; }
+
+        /* Editor Styles */
+        #note-editor-content {
+            flex-grow: 1; 
+            overflow-y: auto;
+            padding: 1rem;
+        }
+        #note-body-container {
+            min-height: 100%;
+            padding: 0; 
+            border: none;
+            line-height: 1.6;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            text-align: initial;
+            outline: none;
+            display: block; 
+            white-space: normal; 
+        }
+        
+        /* Dynamic Font Sizes */
+        .font-size-small { font-size: 0.875rem; } /* 14px */
+        .font-size-medium { font-size: 1rem; }    /* 16px (default) */
+        .font-size-large { font-size: 1.125rem; } /* 18px */
+        
+        /* Highlighting active formats */
+        .active-format {
+            background-color: rgba(0, 122, 255, 0.1); 
+            border-radius: 4px;
+            color: #007aff !important; 
+            padding: 0.25rem; 
+        }
+        
+        /* Monospace/Code formatting */
+        #note-body-container code {
+            font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            background-color: #ededed;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-size: 0.9em;
+            white-space: pre-wrap;
+            word-break: break-all;
+            display: inline-block;
+        }
+        
+        /* --- Professional Toolbar Styling (Top) --- */
+        #note-editor-view .header-content {
+            z-index: 1000;
+            flex-direction: column;
+            padding-bottom: 0.5rem;
+            border-bottom: 0.5px solid #d1d1d6; 
+            background: linear-gradient(180deg, rgba(255,255,255,1) 90%, rgba(240,240,240,1) 100%);
+        }
+        
+        #editor-toolbar {
+            width: 100%;
+            padding: 0.5rem 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 0.5px solid #d1d1d6; 
+        }
+        
+        #editor-toolbar button {
+            transition: all 0.1s ease-in-out;
+            padding: 0.25rem 0.5rem;
+            border-radius: 6px;
+        }
+        
+        #monospace-btn {
+            line-height: 1;
+            height: 1.75rem;
+            border: 1px solid #d1d1d6;
+        }
+
+        /* Hide scrollbars */
+        #notes-list-view, #note-editor-content {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        #notes-list-view::-webkit-scrollbar, #note-editor-content::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* --- Folder Edit Mode Styling (NEW Checkbox) --- */
+
+        .folder-item-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-grow: 1;
+            /* Default position for content */
+            transition: transform 0.3s ease-in-out; 
+        }
+        
+        .folder-list.editing .folder-item-content {
+            /* Shift the folder content to the right to make space for the selection icon */
+            transform: translateX(25px); 
+        }
+
+        .edit-mode-icon {
+            opacity: 0;
+            transform: translateX(-10px);
+            transition: opacity 0.3s, transform 0.3s;
+            position: absolute;
+            left: 1rem; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.25rem; 
+            height: 1.25rem;
+            cursor: pointer;
+        }
+        
+        .folder-list.editing .edit-mode-icon {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
+        /* Checkbox Styles */
+        .checkbox-unchecked {
+            border: 2px solid #d1d1d6;
+            border-radius: 50%;
+        }
+
+        .checkbox-checked {
+            background-color: #007aff; 
+            border: 2px solid #007aff;
+            border-radius: 50%;
+            color: white; 
+            /* Inner checkmark icon */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+        }
+        
+        /* 'Notes' folder styling when editing - uneditable state */
+        .folder-list.editing .folder-item[data-folder="Notes"] .edit-mode-icon {
+            display: none; 
+        }
+        .folder-list.editing .folder-item[data-folder="Notes"] .folder-item-content {
+            transform: translateX(0); 
+        }
+        
+  .header{
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            padding:25px 0px 10px 12px;
+            background:var(--card);
+            border-bottom:1px solid var(--border-color);
+            position:fixed; top:0; z-index:10;
+            width: 100%;
+        }
+        .header a{
+            color:var(--system-blue);
+            text-decoration:none;
+            font-size:1.0rem;
+            font-weight:500;
+            text-align: left;
+        }
+        .header-title{
+            font-weight:550;
+            font-size:1.1rem;
+            text-align:center;
+            flex:1;
+            color:var(--text-color);
+            margin-left: -20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="phone-container shadow-2xl">
+<div class="header mb-4">
+    <a href="" onclick="history.back(); return false;"><i class="fas fa-chevron-left"></i> Back</a>
+    <div class="header-title text-gray-750">Notes</div>
+    <div style="width:36px;"></div>
+</div>
+
+        <div id="folder-view" class="view bg-gray-50 current pt-10">
+
+            <header class="pt-12 px-4 pb-2 bg-white sticky top-0 ios-header-separator">
+                <h1 class="text-4xl font-bold mb-1">Folders</h1>
+                <div class="relative mt-2 mb-2">
+                    <input type="text" id="folder-search-input" placeholder="Search" class="w-full p-2 pl-10 bg-gray-200 rounded-lg text-base placeholder-gray-500 focus:ring-blue-500 focus:ring-1 focus:bg-white transition" oninput="renderFolders()">
+                    <svg class="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                </div>
+            </header>
+
+            <div class="h-full overflow-y-auto pb-20">
+                <ul id="folder-list" class="bg-white mt-4 border-y border-gray-200 text-lg">
+                </ul>
+            </div>
+
+            <footer class="w-full flex justify-between items-center p-4 bg-gray-50 ios-toolbar mt-auto">
+                <button id="folder-edit-btn" class="text-blue-500 text-base font-normal" onclick="toggleFolderEditMode()">Edit</button>
+                <div class="flex space-x-4">
+                    <button class="text-blue-500 text-2xl hover:text-blue-700" onclick="openFeatureModal('new-folder')">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+                    </button>
+                </div>
+            </footer>
+        </div>
+
+
+        <div id="notes-list-view" class="view bg-gray-50 right " style="z-index: 100; position: fixed; top-0;">
+            <header class="pt-12 px-4 pb-2 bg-white sticky top-0 ios-header-separator">
+                <button onclick="closeNotesList()" class="text-blue-500 text-base font-normal flex items-center mb-1 top-0 ">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                    Folders
+                </button>
+                <h1 id="notes-list-title" class="text-4xl font-bold mb-1">Notes</h1>
+                <div class="relative mt-2 mb-2">
+                    <input type="text" id="note-search-input" placeholder="Search" class="w-full p-2 pl-10 bg-gray-200 rounded-lg text-base placeholder-gray-500 focus:ring-blue-500 focus:ring-1 focus:bg-white transition" oninput="renderNotes()">
+                    <svg class="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                </div>
+            </header>
+            
+            <div id="notes-list" class="bg-white border-y border-gray-200 flex-grow overflow-y-auto">
+            </div>
+
+            <footer class="w-full flex justify-end items-center p-4 bg-gray-50 ios-toolbar mt-auto">
+                <div class="flex items-center space-x-4">
+                    <button class="w-10 h-10 bg-yellow-400 text-white rounded-full text-2xl font-medium shadow-md hover:bg-yellow-500 transition duration-150 active:scale-95" onclick="openNoteEditor()">
+                        +
+                    </button>
+                </div>
+            </footer>
+        </div>
+
+        <div id="note-editor-view" class="view bg-white right pt-10" style="z-index: 100; position: fixed;">
+            
+            <header class="fixed top-0 bg-white display-flex" style="min-width: 100vw; display: relative; ">
+                <div class="pt-12 px-4 pb-2 flex justify-between items-center">
+                    <button onclick="closeNoteEditor()" class="text-blue-500 text-base font-normal flex items-center">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                        <span id="editor-back-folder-name">Notes</span>
+                    </button>
+                    <button id="delete-note-btn" class="text-red-500 text-base font-normal hidden" onclick="deleteNote(true)">Delete</button>
+                </div>
+                
+                <div id="editor-toolbar" style=" box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.3);
+">
+                    <div class="flex space-x-2">
+                        <button id="font-size-btn" class="text-blue-500 text-lg font-semibold" onclick="toggleFontSize()">
+                            A<span class="text-sm">A</span>
+                        </button>
+                        
+                        <span class="text-gray-300">|</span> 
+                        
+                        <button id="bold-btn" class="text-blue-500 text-xl font-bold" onclick="applyFormatting('B')">
+                            B
+                        </button>
+                        <button id="italic-btn" class="text-blue-500 text-xl italic" onclick="applyFormatting('I')">
+                            I
+                        </button>
+                        <button id="underline-btn" class="text-blue-500 text-xl underline" onclick="applyFormatting('U')">
+                            U
+                        </button>
+                        <button id="monospace-btn" class="text-blue-500 text-base font-mono py-1 px-1" onclick="applyFormatting('CODE')">
+                            <>
+                        </button>
+                    </div>
+                </div>
+            </header>
+            
+            <div id="note-editor-content">
+                <input type="text" id="note-title" class="w-full text-2xl font-semibold placeholder-gray-400 focus:outline-none focus:ring-0 mb-4 mt-20" placeholder="Title" oninput="handleNoteChange()">
+                <div id="note-body-container" class="w-full font-size-medium placeholder-gray-400 focus:outline-none focus:ring-0 leading-relaxed" 
+                     contenteditable="true" 
+                     oninput="handleNoteChange()"
+                     onmouseup="saveSelection(); updateToolbarState();" 
+                     onkeyup="saveSelection(); updateToolbarState();"
+                     onkeydown="saveSelection(); handleEnterKeyPreventDefault(event);"
+                     onfocus="editorBarFocus(true)"
+                     onblur="editorBarFocus(false)">
+                New notes</div>
+            </div>
+
+            <footer class="w-full p-2 bg-gray-50 ios-toolbar mt-auto">
+            </footer>
+        </div>
+
+        <div id="feature-modal" class="fixed inset-0 bg-black bg-opacity-40 hidden flex justify-center items-end z-[2000]" onclick="if (event.target === this) closeFeatureModal()">
+            <div id="feature-modal-content" class="w-full max-w-sm sm:max-w-md bg-white rounded-t-xl">
+                <div class="p-4 w-full">
+                    <h2 id="modal-title" class="text-xl font-bold text-center mb-4 hidden">Feature Menu</h2>
+                    <div id="modal-body" class="pb-2">
+                    </div>
+                    <button onclick="closeFeatureModal()" class="w-full py-3 bg-gray-200 text-gray-800 rounded-xl font-semibold mt-4 active:bg-gray-300">Cancel</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="folder-action-modal" class="fixed inset-0 bg-black bg-opacity-40 hidden flex justify-center items-end z-[2000]" onclick="if (event.target === this) closeFolderActionModal()">
+             <div class="w-full max-w-sm sm:max-w-md bg-white rounded-t-xl">
+                 <div class="p-4 w-full">
+                     <h2 id="action-folder-name" class="text-center text-sm text-gray-500 mb-2"></h2>
+                     <ul class="text-blue-500 text-center text-lg bg-white rounded-xl shadow-lg border border-gray-200">
+                          <li class="p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer active:bg-gray-100 font-normal" onclick="openRenameModal(folderToRename); closeFolderActionModal();">Rename</li>
+                          <li class="p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer active:bg-gray-100 text-red-500 font-normal" onclick="deleteFolder(folderToRename); closeFolderActionModal();">Delete</li>
+                     </ul>
+                     <button onclick="closeFolderActionModal()" class="w-full py-3 bg-gray-200 text-gray-800 rounded-xl font-semibold mt-4 active:bg-gray-300">Cancel</button>
+                 </div>
+             </div>
+        </div>
+
+        <div id="rename-modal" class="fixed inset-0 bg-black bg-opacity-40 hidden flex justify-center items-center z-[2001]" onclick="if (event.target === this) closeRenameModal()">
+            <div class="bg-white p-6 rounded-xl shadow-lg w-11/12 max-w-xs text-center">
+                <h3 class="text-lg font-bold mb-4">Rename Folder</h3>
+                <input type="text" id="rename-folder-input" class="w-full p-2 border border-gray-300 rounded-lg mb-4 text-center">
+                <div class="flex justify-between space-x-2">
+                    <button onclick="closeRenameModal()" class="flex-1 py-2 bg-gray-200 rounded-lg text-gray-800">Cancel</button>
+                    <button onclick="commitRename()" class="flex-1 py-2 bg-blue-500 text-white rounded-lg font-semibold">Rename</button>
+                </div>
+            </div>
+        </div>
+
+
+    </div>
+
+    <script>
+        // --- Core State and Constants ---
+        const NOTES_STORAGE_KEY = 'ios_notes_replica_v8_pro'; 
+        const FONT_SIZES = ['small', 'medium', 'large'];
+        let state = {
+            notes: [],
+            folders: ['Notes'],
+            currentNoteId: null, 
+            currentView: 'folder-view', 
+            currentFolder: 'Notes',
+            isFolderEditing: false, 
+            lastSelection: null,
+            currentFontSizeIndex: 1, // 1 = medium (default)
+            selectedFolders: new Set(), // NEW: Track selected folders for bulk actions (not fully implemented, but sets up the visual)
+        };
+
+        // DOM Elements
+        const views = {
+            'folder-view': document.getElementById('folder-view'),
+            'notes-list-view': document.getElementById('notes-list-view'),
+            'note-editor-view': document.getElementById('note-editor-view')
+        };
+        const folderListEl = document.getElementById('folder-list');
+        const notesListEl = document.getElementById('notes-list');
+        const notesListTitleEl = document.getElementById('notes-list-title');
+        const editorBackFolderEl = document.getElementById('editor-back-folder-name');
+        const titleInputEl = document.getElementById('note-title');
+        const bodyContainerEl = document.getElementById('note-body-container');
+        const deleteButtonEl = document.getElementById('delete-note-btn');
+        const folderEditBtn = document.getElementById('folder-edit-btn');
+        const folderSearchInput = document.getElementById('folder-search-input');
+        const noteSearchInput = document.getElementById('note-search-input');
+        
+        // Toolbar elements for highlighting
+        const boldBtn = document.getElementById('bold-btn');
+        const italicBtn = document.getElementById('italic-btn');
+        const underlineBtn = document.getElementById('underline-btn');
+        const monospaceBtn = document.getElementById('monospace-btn');
+        const fontSizeBtn = document.getElementById('font-size-btn');
+        
+        // Modal elements
+        const featureModalEl = document.getElementById('feature-modal');
+        const modalTitleEl = document.getElementById('modal-title');
+        const modalBodyEl = document.getElementById('modal-body');
+        const renameModalEl = document.getElementById('rename-modal');
+        const renameFolderInput = document.getElementById('rename-folder-input');
+        const folderActionModalEl = document.getElementById('folder-action-modal');
+        const actionFolderNameEl = document.getElementById('action-folder-name');
+        let folderToRename = null;
+
+
+        // --- Utility Functions ---
+
+        function generateId() {
+            return Date.now().toString(36) + Math.random().toString(36).substr(2);
+        }
+
+        function formatDate(timestamp) {
+            const date = new Date(timestamp);
+            const today = new Date();
+
+            if (date.toDateString() === today.toDateString()) {
+                return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+            } else {
+                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            }
+        }
+        
+        // --- Navigation & Folder Management ---
+
+        function updateViewClasses() {
+            for (const key in views) {
+                const viewElement = views[key];
+                viewElement.classList.remove('current', 'left', 'right');
+
+                if (key === state.currentView) {
+                    viewElement.classList.add('current');
+                } else if (
+                    (key === 'folder-view' && state.currentView !== 'folder-view') ||
+                    (key === 'notes-list-view' && state.currentView === 'note-editor-view')
+                ) {
+                    viewElement.classList.add('left');
+                } else {
+                    viewElement.classList.add('right');
+                }
+            }
+        }
+        
+        function navigateTo(targetView) {
+            if (targetView === state.currentView) return;
+            state.currentView = targetView;
+            updateViewClasses();
+            if (targetView === 'notes-list-view') {
+                renderNotes();
+            }
+        }
+
+        function closeNotesList() {
+             state.currentView = 'folder-view';
+             updateViewClasses();
+             renderFolders();
+        }
+
+        function navigateBack() {
+             state.currentView = 'notes-list-view';
+             updateViewClasses();
+             renderNotes();
+        }
+
+        function openFolderActionModal(folderName) {
+            folderToRename = folderName;
+            actionFolderNameEl.textContent = folderName;
+            folderActionModalEl.classList.remove('hidden');
+        }
+        
+        function closeFolderActionModal() {
+             folderActionModalEl.classList.add('hidden');
+        }
+        
+        function toggleFolderSelection(folderName, event) {
+             event.stopPropagation(); // Prevent the click from opening the folder/action sheet
+
+             const listItem = event.currentTarget.closest('.folder-item');
+             const checkbox = listItem.querySelector('.edit-mode-icon');
+             
+             if (state.selectedFolders.has(folderName)) {
+                 state.selectedFolders.delete(folderName);
+                 checkbox.innerHTML = `<input type="checkbox" class="checkbox-unchecked w-full h-full"/>`;
+             } else {
+                 state.selectedFolders.add(folderName);
+                 checkbox.innerHTML = `<input class="checkbox-checked w-full h-full"/>`;
+             }
+             // NOTE: Further selection logic (like bulk delete) is not implemented, but the visual state is set.
+        }
+
+        function handleFolderClick(folderName) {
+            if (state.isFolderEditing) {
+                if (folderName !== 'Notes') {
+                    // Open the action sheet for rename/delete when clicking the folder content
+                    openFolderActionModal(folderName);
+                }
+                return;
+            }
+            state.currentFolder = folderName;
+            notesListTitleEl.textContent = folderName;
+            editorBackFolderEl.textContent = folderName;
+            navigateTo('notes-list-view');
+        }
+
+        function toggleFolderEditMode() {
+            state.isFolderEditing = !state.isFolderEditing;
+            folderEditBtn.textContent = state.isFolderEditing ? 'Done' : 'Edit';
+notesListTitleEl.textContent = state.isFolderEditing ? 'Done' : 'Edit';
+            folderListEl.classList.toggle('editing', state.isFolderEditing);
+            // Clear selection when entering/leaving edit mode
+            state.selectedFolders.clear();
+            renderFolders(); 
+        }
+
+
+        // --- Modal/Sheet Logic (New Folder & Rename) ---
+
+        function openFeatureModal(feature) {
+            featureModalEl.classList.add('open');
+            featureModalEl.classList.remove('hidden');
+            
+            modalTitleEl.classList.remove('hidden');
+
+            if (feature === 'new-folder') {
+                modalTitleEl.textContent = 'New Folder'; 
+                modalBodyEl.innerHTML = `
+                    <p class="text-center text-gray-500 mb-4 text-sm">Create a new folder to organize your notes.</p>
+                    <input type="text" id="new-folder-name" placeholder="Folder Name" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-center" onkeydown="if(event.key==='Enter') createNewFolder()">
+                    <ul class="mt-4 text-blue-500 text-center text-lg">
+                         <li class="p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer active:bg-gray-100 font-semibold" onclick="createNewFolder();">Save</li>
+                    </ul>
+                `; 
+                setTimeout(() => document.getElementById('new-folder-name').focus(), 100);
+            }
+        }
+
+        function closeFeatureModal() {
+             featureModalEl.classList.remove('open');
+             setTimeout(() => { featureModalEl.classList.add('hidden'); }, 300);
+        }
+
+        function createNewFolder() {
+            const folderName = document.getElementById('new-folder-name').value.trim();
+            if (folderName && !state.folders.map(f => f.toLowerCase()).includes(folderName.toLowerCase())) {
+                state.folders.push(folderName);
+                saveNotes(); 
+                renderFolders();
+                closeFeatureModal();
+            } else if (state.folders.map(f => f.toLowerCase()).includes(folderName.toLowerCase())) {
+                 alert(`Folder "${folderName}" already exists.`);
+            }
+        }
+
+        function openRenameModal(folderName) {
+            folderToRename = folderName;
+            renameFolderInput.value = folderName;
+            renameModalEl.classList.remove('hidden');
+            setTimeout(() => renameFolderInput.focus(), 50);
+        }
+
+        function closeRenameModal() {
+            renameModalEl.classList.add('hidden');
+            folderToRename = null;
+        }
+
+        function commitRename() {
+            const newName = renameFolderInput.value.trim();
+            if (!newName || newName === folderToRename) {
+                closeRenameModal();
+                return;
+            }
+            if (state.folders.map(f => f.toLowerCase()).includes(newName.toLowerCase())) {
+                alert(`Folder "${newName}" already exists.`);
+                return;
+            }
+
+            const index = state.folders.indexOf(folderToRename);
+            if (index !== -1) {
+                state.folders[index] = newName;
+            }
+
+            state.notes.forEach(note => {
+                if (note.folder === folderToRename) {
+                    note.folder = newName;
+                }
+            });
+
+            saveNotes();
+            closeRenameModal();
+            renderFolders();
+            if (state.currentFolder === folderToRename) {
+                state.currentFolder = newName;
+                notesListTitleEl.textContent = newName;
+                editorBackFolderEl.textContent = newName;
+            }
+        }
+        
+        function deleteFolder(folderName) {
+            if (folderName === 'Notes') {
+                alert('The primary "Notes" folder cannot be deleted.');
+                return;
+            }
+            if (!confirm(`Are you sure you want to delete the folder "${folderName}"? All notes inside will be permanently deleted.`)) {
+                return;
+            }
+            
+            state.folders = state.folders.filter(f => f !== folderName);
+            state.notes = state.notes.filter(n => n.folder !== folderName);
+
+            saveNotes();
+            renderFolders();
+            if (state.currentFolder === folderName) {
+                toggleFolderEditMode();
+                state.currentFolder = 'Notes';
+                closeNotesList();
+            }
+        }
+
+
+        // --- Data Persistence and Rendering (CRUD & Search) ---
+
+        function loadNotes() {
+            const storedData = localStorage.getItem(NOTES_STORAGE_KEY);
+            if (storedData) {
+                const data = JSON.parse(storedData);
+                state.notes = data.notes || [];
+                state.folders = Array.from(new Set(['Notes', ...(data.folders || [])]));
+                
+                // Load font size if present
+                state.currentFontSizeIndex = data.fontSizeIndex !== undefined ? data.fontSizeIndex : 1;
+            } else {
+                 state.folders = ['Notes'];
+            }
+            renderFolders();
+        }
+        
+        function saveNotes() {
+            const dataToStore = {
+                notes: state.notes,
+                folders: state.folders,
+                fontSizeIndex: state.currentFontSizeIndex 
+            };
+            localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(dataToStore));
+        }
+
+        function renderFolders() {
+            const searchTerm = folderSearchInput.value.trim().toLowerCase();
+            folderListEl.innerHTML = '';
+            
+            const folderCounts = state.notes.reduce((acc, note) => {
+                acc[note.folder] = (acc[note.folder] || 0) + 1;
+                return acc;
+            }, {});
+
+            const filteredFolders = state.folders.filter(f => f.toLowerCase().includes(searchTerm));
+
+            filteredFolders.forEach(folderName => {
+                const count = folderCounts[folderName] || 0;
+                const isMainFolder = folderName === 'Notes';
+                const icon = isMainFolder 
+                    ? `<svg class="w-6 h-6 text-yellow-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>`
+                    : `<svg class="w-6 h-6 text-blue-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>`;
+                
+                const li = document.createElement('li');
+                li.className = 'folder-item flex items-center px-4 py-3 border-b border-gray-200 cursor-pointer active:bg-gray-100 relative';
+                li.setAttribute('data-folder', folderName);
+                li.onclick = () => handleFolderClick(folderName);
+                
+                // NEW: Edit Mode Checkbox Icon
+                let editModeIcon = '';
+                if (state.isFolderEditing && !isMainFolder) {
+                    const isSelected = state.selectedFolders.has(folderName);
+                    const checkboxClass = isSelected ? 'checkbox-checked' : 'checkbox-unchecked';
+                    const innerContent = isSelected ? '✓' : '';
+                    
+                    editModeIcon = `
+                        <div class="edit-mode-icon" onclick="toggleFolderSelection('${folderName}', event)">
+                            <div class="${checkboxClass} w-full h-full">${innerContent}</div>
+                        </div>
+                    `;
+                }
+
+                // Inner content wrapper (for translation effect)
+                li.innerHTML = `
+                    ${editModeIcon}
+                    <div class="folder-item-content">
+                        <div class="flex items-center">
+                            ${icon}
+                            <span class="text-base">${folderName}</span>
+                        </div>
+                        <span class="text-gray-400 text-base">${count}</span>
+                    </div>
+                `;
+                folderListEl.appendChild(li);
+            });
+        }
+
+        function renderNotes() {
+            const searchTerm = noteSearchInput.value.trim().toLowerCase();
+            notesListEl.innerHTML = '';
+            
+            const filteredNotes = state.notes
+                .filter(n => n.folder === state.currentFolder)
+                .filter(n => 
+                    n.title.toLowerCase().includes(searchTerm) || 
+                    n.body.toLowerCase().includes(searchTerm)
+                )
+                .sort((a, b) => b.updated - a.updated);
+
+            if (filteredNotes.length === 0) {
+                notesListEl.innerHTML = '<p class="text-center mt-12 text-gray-500">No Notes</p>';
+                return;
+            }
+
+            filteredNotes.forEach(note => {
+                const title = note.title.trim() || 'New Note';
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = note.body;
+                const rawText = tempDiv.innerText || '';
+
+                const bodySnippet = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0)[0] || 'No additional text';
+                const dateStr = formatDate(note.updated);
+
+                const noteElement = document.createElement('div');
+                noteElement.className = 'px-4 py-2 border-b border-gray-200 cursor-pointer hover:bg-gray-50 active:bg-gray-100 transition duration-75';
+                noteElement.onclick = () => openNoteEditor(note.id);
+                
+                noteElement.innerHTML = `
+                    <h3 class="text-base font-medium truncate">${title}</h3>
+                    <p class="text-sm text-gray-500 truncate">${dateStr} · ${bodySnippet}</p>
+                `;
+                notesListEl.appendChild(noteElement);
+            });
+        }
+
+        // --- Note Editor Logic (Rich Text & Toolbar) ---
+        
+        function saveSelection() {
+            if (window.getSelection) {
+                const selection = window.getSelection();
+                if (selection.getRangeAt && selection.rangeCount) {
+                    state.lastSelection = selection.getRangeAt(0);
+                }
+            }
+        }
+
+        function applyFormatting(tag) {
+            if (state.lastSelection) {
+                const selection = window.getSelection();
+                selection.removeAllRanges();
+                selection.addRange(state.lastSelection);
+            }
+            
+            let command = '';
+            switch (tag) {
+                case 'B':
+                    command = 'bold';
+                    break;
+                case 'I':
+                    command = 'italic';
+                    break;
+                case 'U':
+                    command = 'underline';
+                    break;
+                case 'CODE':
+                    const selection = window.getSelection();
+                    let node = selection.getRangeAt(0).commonAncestorContainer;
+                    if (node.nodeType === 3) node = node.parentNode;
+
+                    if (node.closest('code')) {
+                        document.execCommand('removeFormat', false, null);
+                    } else {
+                        document.execCommand('insertHTML', false, '<code>' + selection.toString() + '</code>');
+                    }
+                    break;
+            }
+            
+            if (command && command !== 'CODE') {
+                 document.execCommand(command, false, null);
+            }
+
+            updateToolbarState(); 
+            handleNoteChange(); 
+        }
+        
+        function toggleFontSize() {
+            state.currentFontSizeIndex = (state.currentFontSizeIndex + 1) % FONT_SIZES.length;
+            
+            const newSizeClass = `font-size-${FONT_SIZES[state.currentFontSizeIndex]}`;
+            
+            FONT_SIZES.forEach(size => {
+                bodyContainerEl.classList.remove(`font-size-${size}`);
+            });
+            
+            bodyContainerEl.classList.add(newSizeClass);
+            
+            updateToolbarState();
+            saveNotes(); 
+        }
+        
+        function updateToolbarState() {
+            // 1. Remove all highlights first
+            [boldBtn, italicBtn, underlineBtn, monospaceBtn].forEach(btn => btn.classList.remove('active-format'));
+
+            if (!document.getSelection() || !bodyContainerEl.contains(document.getSelection().anchorNode)) {
+                return;
+            }
+
+            // 2. Check formatting status
+            if (document.queryCommandState('bold')) {
+                boldBtn.classList.add('active-format');
+            }
+            if (document.queryCommandState('italic')) {
+                italicBtn.classList.add('active-format');
+            }
+            if (document.queryCommandState('underline')) {
+                underlineBtn.classList.add('active-format');
+            }
+            
+            // 3. Check for Monospace
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                let node = selection.getRangeAt(0).commonAncestorContainer;
+                if (node.nodeType === 3) node = node.parentNode;
+                
+                if (node.closest('code')) {
+                     monospaceBtn.classList.add('active-format');
+                }
+            }
+            
+            // 4. Update Font Size Button Highlight
+            fontSizeBtn.classList.remove('active-format');
+            if (state.currentFontSizeIndex !== 1) { 
+                fontSizeBtn.classList.add('active-format');
+            }
+        }
+
+
+        /** Handle Enter key to insert clean DIV block. */
+        function handleEnterKeyPreventDefault(event) {
+             if (event.key === 'Enter') {
+                const target = event.target;
+                
+                if (target === bodyContainerEl || bodyContainerEl.contains(target)) {
+                     event.preventDefault(); 
+                     document.execCommand('insertHTML', false, '<div><br></div>');
+                     return;
+                }
+             }
+        }
+        
+        function editorBarFocus(isFocused) {
+            const header = document.querySelector('#note-editor-view header');
+            if (isFocused) {
+                header.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+            } else {
+                header.style.boxShadow = 'none';
+            }
+        }
+        
+        // --- Note Editor functions ---
+
+        function openNoteEditor(id = null) {
+            state.currentNoteId = id;
+            state.lastSelection = null; 
+            
+            const sizeClass = `font-size-${FONT_SIZES[state.currentFontSizeIndex]}`;
+            bodyContainerEl.className = bodyContainerEl.className.split(' ').filter(c => !c.startsWith('font-size-')).join(' ');
+            bodyContainerEl.classList.add(sizeClass);
+
+            if (id) {
+                const note = state.notes.find(n => n.id === id);
+                if (note) {
+                    titleInputEl.value = note.title || '';
+                    bodyContainerEl.innerHTML = note.body;
+                    deleteButtonEl.classList.remove('hidden');
+                }
+            } else {
+                titleInputEl.value = '';
+                bodyContainerEl.innerHTML = '';
+                deleteButtonEl.classList.add('hidden');
+            }
+
+            editorBackFolderEl.textContent = state.currentFolder;
+            navigateTo('note-editor-view');
+            setTimeout(() => {
+                titleInputEl.focus();
+                updateToolbarState(); 
+            }, 350); 
+        }
+
+        function handleNoteChange() {
+            const title = titleInputEl.value.trim();
+            const body = bodyContainerEl.innerHTML.trim(); 
+            const updated = Date.now();
+            const hasContent = title.length > 0 || body.length > 0;
+
+            if (!hasContent) return;
+
+            if (state.currentNoteId) {
+                const index = state.notes.findIndex(n => n.id === state.currentNoteId);
+                if (index !== -1) {
+                    state.notes[index].title = title;
+                    state.notes[index].body = body;
+                    state.notes[index].updated = updated;
+                }
+            } else {
+                state.currentNoteId = generateId();
+                const newNote = { id: state.currentNoteId, title: title, body: body, created: updated, updated: updated, folder: state.currentFolder };
+                state.notes.push(newNote);
+                deleteButtonEl.classList.remove('hidden');
+            }
+            saveNotes();
+        }
+
+        function closeNoteEditor() {
+            const title = titleInputEl.value.trim();
+            const body = bodyContainerEl.innerHTML.trim();
+            const hasContent = title.length > 0 || body.length > 0;
+
+            if (state.currentNoteId) {
+                const index = state.notes.findIndex(n => n.id === state.currentNoteId);
+                if (index !== -1 && !hasContent) {
+                    deleteNote(false); 
+                    return;
+                }
+                handleNoteChange(); 
+            } else if (hasContent) {
+                 handleNoteChange(); 
+            }
+            
+            state.currentNoteId = null;
+            navigateBack();
+        }
+
+        function deleteNote(confirmUser = true) {
+            if (!state.currentNoteId) return;
+            
+            if (confirmUser && !window.confirm('Are you sure you want to permanently delete this note?')) {
+                return;
+            }
+
+            state.notes = state.notes.filter(n => n.id !== state.currentNoteId);
+            
+            if (state.currentView === 'note-editor-view') {
+                navigateBack(); 
+            }
+
+            state.currentNoteId = null;
+            saveNotes(); 
+        }
+        
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+             views['notes-list-view'].classList.add('right');
+             views['note-editor-view'].classList.add('right');
+             
+             loadNotes();
+             updateViewClasses();
+        });
+    </script>
+</body>
+</html>

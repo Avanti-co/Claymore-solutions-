@@ -1,0 +1,1407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=0.95, maximum-scale=0.95, user-scalable=no">
+<title>Manage Devices – Avanti Ledger</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+
+
+
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#3f72af">
+
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("/service-worker.js")
+        .then(reg => console.log("Service worker registered:", reg))
+        .catch(err => console.error("Service worker error:", err));
+    });
+  }
+</script>
+
+<style>
+  :root{
+      --card-bg: rgba(255,255,255,0.9);
+      --muted: #6b7280;
+      --accent: #0ea5a4; /* teal-ish */
+      --glass: rgba(255,255,255,0.6);
+    
+            --system-blue: #007AFF;
+            --system-red: #FF3B30;
+            --bg: #F2F2F7;
+            --card: #FFFFFF;
+            --border-color: #E5E5E5;
+            --text-color: #000000;
+            --muted-color: #8E8E93;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+        }
+    body {
+        margin: 0;
+        padding: 0;
+        background: #f2f2f7;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        color: #000;
+        overflow-x: hidden;
+        padding-top: 85px;
+    }
+
+   .header{
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            padding:25px 0px 10px 12px;
+            background:#3f72af;
+            border-bottom:1px solid var(--border-color);
+            position:fixed; top:0; z-index:10;
+            width: 100%;
+        }
+        .header a{
+            color:#a3c9f1;
+            text-decoration:none;
+            font-size:1.0rem;
+            font-weight:500;
+            text-align: left;
+        }
+        .header-title{
+            font-weight:600;
+            font-size:1.1rem;
+            text-align:center;
+            flex:1;
+            color:white;
+            margin-left: -20px;
+        }
+
+    .page-title {
+        font-size: 32px;
+        font-weight: 700;
+        padding: 20px;
+        padding-top: 50px;
+        background: #f2f2f7;
+    }
+
+    .section-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: #6e6e73;
+        letter-spacing: .4px;
+        padding: 12px 20px 6px;
+        text-transform: uppercase;
+    }
+
+   .section-title2 {
+        font-size: 14px;
+        font-weight: 600;
+        color: #6e6e73;
+        letter-spacing: .4px;
+        
+        text-transform: uppercase;
+    }
+
+    .list {
+        background: #fff;
+        border-radius: 16px;
+        margin: 0 15px 25px;
+        overflow: hidden;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+    }
+
+    .item {
+        padding: 14px 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: .5px solid #e5e5ea;
+        cursor: pointer;
+    }
+    /* Add a class for items where clicking the username is allowed */
+    .item.editable-name {
+        cursor: text;
+    }
+
+    .item:last-child {
+        border-bottom: none;
+    }
+
+    .left {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .user-name {
+        font-size: 17px;
+        font-weight: 550;
+    }
+    /* Style for the editable span */
+    .user-name span[contenteditable="true"] {
+        outline: none;
+        border-bottom: 1px dashed var(--system-blue);
+        min-width: 50px; /* To prevent collapse when content is empty */
+    }
+
+    .authStatus {
+        color: #6e6e73;
+        font-size: 13px;
+    }
+
+    .badge {
+        background: #34c759;
+        color: white;
+        padding: 2px 8px;
+        font-size: 11px;
+        border-radius: 10px;
+        margin-top: 4px;
+        width: fit-content;
+    }
+
+    .chevron {
+        font-size: 17px;
+        color: #c7c7cc;
+    }
+
+    .danger {
+        color: #ff3b30;
+        font-weight: 500;
+    }
+
+    /* Full Screen Modal */
+    .modal {
+        position: fixed;
+        top: 100%;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: #f2f2f7;
+        z-index: 1000;
+        transition: .35s ease-out;
+        overflow-y: auto;
+    }
+
+    .modal.active {
+        top: 0;
+    }
+
+    .modal-header {
+        position: sticky;
+        top: 0;
+        background: #f2f2f7;
+        padding: 20px;
+        padding-top: 50px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modal-title {
+        font-size: 26px;
+        font-weight: 700;
+    }
+
+    .done-btn {
+        font-size: 17px;
+        font-weight: 600;
+        color: #007aff;
+        cursor: pointer;
+    }
+.safe {
+  color: #34C759; 
+font-weight: 500;
+}
+.disabled-item {
+    opacity: 0.5;
+    pointer-events: none; /* Disables all clicks on the item */
+}
+
+
+    .ios-toggle input:checked + .slider {
+            background-color: #34c759;
+        }
+        .ios-toggle .slider {
+            /* Standard toggle styles */
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #c7c7c7;
+            -webkit-transition: .4s;
+            transition: .4s;
+            border-radius: 34px;
+            width: 3.2rem; /* Adjusted for iOS look */
+            height: 2rem; /* Adjusted for iOS look */
+        }
+        .ios-toggle .slider:before {
+            /* Standard toggle styles */
+            position: absolute;
+            content: "";
+            height: 1.6rem;
+            width: 1.6rem;
+            left: 0.2rem;
+            bottom: 0.2rem;
+            background-color: white;
+            -webkit-transition: .4s;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        .ios-toggle input:checked + .slider:before {
+            -webkit-transform: translateX(1.2rem);
+            -ms-transform: translateX(1.2rem);
+            transform: translateX(1.2rem);
+        }
+        /* Make the label behave like a switch container */
+        .ios-toggle {
+            position: relative;
+            display: inline-block;
+            width: 3.2rem;
+            height: 2rem;
+        }
+        /* Hide the default checkbox */
+        .ios-toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        /* Loader styles for the new modal */
+        .loader { border: 3px solid #f3f3f3; border-radius: 50%; border-top: 3px solid #4f46e5; width: 20px; height: 20px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0%{transform:rotate(0)}100%{transform:rotate(360deg)} }
+
+        /* Style for the password/login modal */
+        .auth-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 1001;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+        .auth-modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+</style>
+
+</head>
+<body>
+
+<div class="header mb-4">
+  <a href="javascript:;" onclick="window.history.back()"
+style="z-index: 100;"
+>
+  <i class="fas fa-chevron-left"></i> Back
+</a>
+
+
+    <div class="header-title text-gray-750">Manage devices</div>
+    <div style="width:36px;"></div>
+</div>
+
+<nav style="
+    position: fixed; 
+    bottom: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 70px; 
+    background: rgba(255, 255, 255, 0.85); 
+    backdrop-filter: blur(20px); 
+    -webkit-backdrop-filter: blur(20px); 
+    border-top: 1px solid rgba(0, 0, 0, 0.05); 
+    display: flex; 
+    justify-content: space-around; 
+    align-items: center; 
+    z-index: 10; 
+    padding-bottom: env(safe-area-inset-bottom);
+    font-family: 'Inter', sans-serif;
+">
+    
+    <a href="dashboard.html" style="display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #64748b; flex: 1; transition: 0.2s;">
+        <svg style="width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2;" viewBox="0 0 24 24">
+            <rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect>
+        </svg>
+        <span style="font-size: 11px; margin-top: 4px; font-weight: 500;">Home</span>
+    </a>
+
+    <a href="inventory.html" style="display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #64748b; flex: 1; position: relative;">
+        
+        
+        <svg style="width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2;" viewBox="0 0 24 24">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+            <line x1="12" y1="22.08" x2="12" y2="12"></line>
+        </svg>
+        <span style="font-size: 11px; margin-top: 4px; font-weight: 500;">Inventory</span>
+    </a>
+
+    <a href="accounting-report.html" style="display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #64748b; flex: 1;">
+        <svg style="width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2;" viewBox="0 0 24 24">
+            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline>
+        </svg>
+        <span style="font-size: 11px; margin-top: 4px; font-weight: 500;">Reports</span>
+    </a>
+
+    <a href="statistics.html" style="display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #64748b; flex: 1;">
+        <svg style="width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2;" viewBox="0 0 24 24">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line>
+        </svg>
+        <span style="font-size: 11px; margin-top: 4px; font-weight: 500;">Stats</span>
+    </a>
+
+    <a href="settings.html" style="display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #3f72af; flex: 1; position: relative">
+<div style="position: absolute; top: -14px; width: 20px; height: 3px; background: #3f72af; border-radius: 0 0 4px 4px;"></div>
+        <svg style="width: 22px; height: 22px; fill: rgba(37, 99, 235, 0.1); stroke: currentColor; stroke-width: 2;" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0-.33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0 .33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+        <span style="font-size: 11px; margin-top: 4px; font-weight: 600;">Settings</span>
+    </a>
+</nav>
+
+<div id="devices-container">
+    <div class="section-title">PRIMARY DEVICES</div>
+    <div class="list" id="primary-devices-list">
+        </div>
+    
+    <div class="section-title">CONNECTED DEVICES</div>
+    <div class="list" id="connected-devices-list">
+        </div>
+</div>
+
+<div class="list" id="add-device-list">
+  <div class="item" id="add-device-btn"><div class="safe"><i class="fa fa-plus"></i> Add Device</div></div>
+</div>
+
+<div class="section-title">ACTIONS</div>
+<div class="list">
+  
+    <div class="item" id="logout-btn" style="display: none;"><div class="danger">Log Out</div></div>
+    <div class="item" id="login-another-btn"><div class="danger">Log out</div></div>
+    <div class="item" id="remove-standard-devices-btn"><div class="danger">Remove All Standard Devices</div></div>
+
+</div>
+
+<div class="modal" id="deviceModal">
+    <div class="modal-header">
+        <div class="modal-title" id="modalDeviceName">Device</div>
+        <div class="done-btn" onclick="closeModal('deviceModal')">Done</div>
+    </div>
+    <div id="modalContent"></div>
+</div>
+
+<div class="modal" id="addDeviceModal">
+    <div class="modal-header bg-white pb-3" style="padding-top: 20px; border-bottom: 1px solid var(--border-color);">
+        <a href="#" class="text-gray-500" onclick="closeModal('addDeviceModal')"><i class="fas fa-times text-xl"></i></a>
+        <div class="header-title text-gray-750" style="margin-left: 0;">Link New Device</div>
+        <div style="width:36px;"></div>
+    </div>
+    
+    <div id="addDeviceContent" class="p-4">
+        <div id="admin-actions-linking" class="bg-white p-4 rounded-xl shadow-lg border border-gray-100">
+            <h2 class="text-xl font-bold text-indigo-700 mb-4 flex items-center"><i class="fas fa-user-shield mr-2"></i> Device Linking (Admin)</h2>
+            <p class="text-sm text-indigo-600 mb-6">As an **Admin** user, you can generate temporary links for new devices to join this account without needing a password.</p>
+
+            <div class="flex flex-col sm:flex-row gap-4 mb-6">
+                <button id="btn-generate-qr" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 rounded-lg transition-colors flex items-center justify-center">
+                    <i class="fas fa-qrcode mr-2"></i> Generate Login QR
+                </button>
+                <button id="btn-generate-code" class="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-2.5 rounded-lg transition-colors flex items-center justify-center">
+                    <i class="fas fa-key mr-2"></i> Generate 6-Char Code
+                </button>
+            </div>
+            
+            <div id="qr-output" class="p-4 bg-gray-100 rounded-lg border border-gray-200 hidden">
+                <div class="flex justify-center items-center h-48">
+                    <div class="text-center text-gray-500">
+                        Select an option above to generate a connection link.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div id="authModal" class="auth-modal">
+    <div class="auth-modal-content">
+        <h3 id="auth-modal-title" class="text-xl font-bold mb-4 text-center">Enter Password</h3>
+        <p id="auth-modal-message" class="text-sm text-gray-600 mb-4 text-center">To access security options, please verify your account password.</p>
+        <input type="text" id="auth-modal-email" placeholder="Account Email" class="w-full p-3 border border-gray-300 rounded-lg mb-3" style="display: none;">
+        <input type="text" id="auth-modal-target-profile" placeholder="Target Profile Name (for login)" class="w-full p-3 border border-gray-300 rounded-lg mb-3" style="display: none;">
+        <input type="password" id="auth-modal-password" placeholder="Account Password" class="w-full p-3 border border-gray-300 rounded-lg mb-4">
+        <div class="flex justify-end gap-3">
+            <button id="auth-modal-cancel" class="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg font-medium hover:bg-gray-300">Cancel</button>
+            <button id="auth-modal-submit" class="px-4 py-2 text-white bg-indigo-600 rounded-lg font-medium hover:bg-indigo-700">Submit</button>
+        </div>
+    </div>
+</div>
+
+
+<div id="toast" class="fixed top-5 right-5 z-50 transform translate-x-full transition-transform duration-300 max-w-sm w-full bg-white shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5" style="z-index: 1009;">
+    <div class="flex-1 w-0 p-4">
+        <div class="flex items-start">
+            <div class="flex-shrink-0 pt-0.5">
+                <i id="toast-icon" class="fas fa-check-circle text-green-500 text-lg"></i>
+            </div>
+            <div class="ml-3 flex-1">
+                <p id="toast-title" class="text-sm font-medium text-gray-900">Success</p>
+                <p id="toast-message" class="mt-1 text-sm text-gray-500">Operation completed.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    // 1. FIREBASE SETUP - REPLACE WITH YOUR CONFIG
+    const firebaseConfig = {
+        apiKey: "AIzaSyAw7L6TJtF1W0PwfStEJUC4CebUyMdQU9w",
+        authDomain: "users-66be4.firebaseapp.com",
+        databaseURL: "https://users-66be4-default-rtdb.firebaseio.com",
+        projectId: "users-66be4",
+        storageBucket: "users-66be4.firebasestorage.app",
+        messagingSenderId: "776585122050",
+        appId: "1:776585122050:web:3f452a1f16dc36ee1ef21b",
+        measurementId: "G-ZS8W4BBGD5"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const rdb = firebase.database();
+    const auth = firebase.auth();
+
+    // 2. CONSTANTS & DOM ELEMENTS
+    const ACCOUNT_KEY_STORAGE = 'AV_ledger_account_key';
+    const USERNAME_STORAGE = 'AV_ledger_username';
+    const AUTH_STATUS_STORAGE = 'AV_ledger_auth_status';
+    const ACCOUNT_EMAIL_STORAGE = 'AV_ledger_account_email';
+
+    let CURRENT_ACCOUNT_KEY = localStorage.getItem(ACCOUNT_KEY_STORAGE);
+    let CURRENT_PROFILE_NAME = localStorage.getItem(USERNAME_STORAGE);
+    let CURRENT_ACCOUNT_EMAIL = localStorage.getItem(ACCOUNT_EMAIL_STORAGE) || '';
+    let CURRENT_AUTH_STATUS = localStorage.getItem(AUTH_STATUS_STORAGE) || 'Standard';
+
+    const primaryList = document.getElementById('primary-devices-list');
+    const connectedList = document.getElementById('connected-devices-list');
+    const deviceModal = document.getElementById("deviceModal");
+    const addDeviceModal = document.getElementById("addDeviceModal");
+    const modalName = document.getElementById("modalDeviceName");
+    const modalContent = document.getElementById("modalContent");
+    const addDeviceBtn = document.getElementById('add-device-btn');
+    const logoutBtn = document.getElementById('logout-btn');
+    const loginAnotherBtn = document.getElementById('login-another-btn');
+    const removeStandardDevicesBtn = document.getElementById('remove-standard-devices-btn');
+
+    let allProfiles = {};
+    let currentUserProfile = null;
+
+    // --- UTILITY FUNCTIONS ---
+    function toast(title, message, ok=true){
+        const t = document.getElementById('toast');
+        document.getElementById('toast-title').textContent = title;
+        document.getElementById('toast-message').textContent = message;
+        document.getElementById('toast-icon').className = ok ? 'fas fa-check-circle text-green-500 text-lg' : 'fas fa-exclamation-circle text-red-500 text-lg';
+        t.classList.remove('translate-x-full');
+        setTimeout(()=> t.classList.add('translate-x-full'), 3500);
+    }
+
+    function formatTimestamp(timestamp) {
+        if (!timestamp) return 'N/A';
+        const date = new Date(timestamp);
+        const day = date.getDate();
+        const month = date.toLocaleString('default', { month: 'long' });
+        const year = date.getFullYear();
+        let daySuffix;
+        if (day > 3 && day < 21) daySuffix = 'th';
+        else switch (day % 10) {
+            case 1: daySuffix = "st"; break;
+            case 2: daySuffix = "nd"; break;
+            case 3: daySuffix = "rd"; break;
+            default: daySuffix = "th";
+        }
+        return `${day}${daySuffix} ${month}, ${year}.`;
+    }
+
+    /**
+     * Toggle reciprocity: this writes both sides so A<->B are consistent.
+     */
+    async function toggleSync(targetProfileName, isChecked) {
+        if (!CURRENT_ACCOUNT_KEY || !CURRENT_PROFILE_NAME) {
+            toast('Error', 'Current profile not authenticated.', false);
+            return;
+        }
+
+        const currentUserPath = `accounts/${CURRENT_ACCOUNT_KEY}/profiles/${CURRENT_PROFILE_NAME}`;
+        const targetUserPath = `accounts/${CURRENT_ACCOUNT_KEY}/profiles/${targetProfileName}`;
+
+        const updates = {};
+        const value = isChecked ? true : null;
+
+        // Current user's outbound and "with" fields
+        updates[`${currentUserPath}/syncingTo/${targetProfileName}`] = value;
+        updates[`${currentUserPath}/syncingWith/${targetProfileName}`] = value;
+
+        // Target user's reciprocal fields
+        updates[`${targetUserPath}/syncingWith/${CURRENT_PROFILE_NAME}`] = value;
+        updates[`${targetUserPath}/syncingTo/${CURRENT_PROFILE_NAME}`] = value;
+
+        try {
+            await db.ref().update(updates);
+            toast('Sync Updated', `Mutual data sync ${isChecked ? 'enabled' : 'disabled'} with ${targetProfileName}.`);
+            // fetchAndRenderDevices will be triggered by the 'value' listener and will refresh UI.
+            // But force a local refresh now to minimize latency:
+            fetchAndRenderDevices();
+
+        } catch (error) {
+            console.error("Error toggling sync:", error);
+            toast('Error', 'Failed to update sync status.', false);
+            // Revert switch if present
+            const switchEl = document.getElementById('sync-switch');
+            if (switchEl) switchEl.checked = !isChecked;
+        }
+    }
+
+    // --- NAME EDIT & UPDATE LOGIC (unchanged, kept for completeness) ---
+    async function handleNameEdit(e) {
+        if(e.currentTarget.closest('#devices-container')) return;
+        const span = e.target.closest('span');
+        const oldName = span.textContent.trim();
+        if (!span || span.dataset.profile !== CURRENT_PROFILE_NAME) return;
+        span.setAttribute('contenteditable', 'true');
+        span.focus();
+
+        function handleBlur() {
+            span.removeAttribute('contenteditable');
+            span.removeEventListener('blur', handleBlur);
+            const newName = span.textContent.trim();
+            if (newName && newName !== oldName) {
+                if (newName.length > 20 ) {
+                    toast('Error', 'Invalid or too long username.', false);
+                    span.textContent = oldName;
+                    return;
+                }
+                updateUsername(oldName, newName, CURRENT_ACCOUNT_KEY);
+            } else {
+                span.textContent = oldName;
+            }
+        }
+
+        function handleKeydown(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                span.blur();
+            }
+        }
+
+        span.addEventListener('blur', handleBlur);
+        span.addEventListener('keydown', handleKeydown);
+    }
+
+    async function updateUsername(oldName, newName, accountKey) {
+        if (allProfiles[newName]) {
+            toast('Error', 'Username already exists!', false);
+            const modalSpan = document.querySelector(".modal .user-name span");
+            if(modalSpan) modalSpan.textContent = oldName;
+            return;
+        }
+
+        const oldProfileRef = db.ref(`accounts/${accountKey}/profiles/${oldName}`);
+
+        try {
+            const snapshot = await oldProfileRef.once('value');
+            const profileData = snapshot.val();
+
+            if (!profileData) {
+                toast('Error', 'Profile not found.', false);
+                return;
+            }
+
+            const allUpdates = {};
+            profileData.displayName = newName;
+            allUpdates[`accounts/${accountKey}/profiles/${newName}`] = profileData;
+            allUpdates[`accounts/${accountKey}/profiles/${oldName}`] = null;
+
+            // Update references across all profiles
+            Object.keys(allProfiles).forEach(otherProfileName => {
+                if (otherProfileName !== oldName) {
+                    const otherProfile = allProfiles[otherProfileName];
+                    const pathBase = `accounts/${accountKey}/profiles/${otherProfileName}`;
+
+                    if (otherProfile.syncingTo && otherProfile.syncingTo[oldName] !== undefined) {
+                        allUpdates[`${pathBase}/syncingTo/${newName}`] = otherProfile.syncingTo[oldName];
+                        allUpdates[`${pathBase}/syncingTo/${oldName}`] = null;
+                    }
+
+                    if (otherProfile.syncingWith && otherProfile.syncingWith[oldName] !== undefined) {
+                        allUpdates[`${pathBase}/syncingWith/${newName}`] = otherProfile.syncingWith[oldName];
+                        allUpdates[`${pathBase}/syncingWith/${oldName}`] = null;
+                    }
+                }
+            });
+
+            await db.ref().update(allUpdates);
+
+            localStorage.setItem(USERNAME_STORAGE, newName);
+            CURRENT_PROFILE_NAME = newName;
+
+            toast('Username Updated', `Profile name changed from ${oldName} to ${newName}.`);
+            fetchAndRenderDevices();
+            closeModal('deviceModal');
+
+        } catch(error) {
+            console.error("Error updating username:", error);
+            toast('Error', 'Failed to update username in Firebase.', false);
+            const modalSpan = document.querySelector(".modal .user-name span");
+            if(modalSpan) modalSpan.textContent = oldName;
+        }
+    }
+
+    function closeModal(modalId) {
+        document.getElementById(modalId).classList.remove("active");
+        if (modalId === 'addDeviceModal') {
+            document.getElementById('qr-output').innerHTML = `
+                <div class="flex justify-center items-center h-48">
+                    <div class="text-center text-gray-500">
+                        Select an option above to generate a connection link.
+                    </div>
+                </div>
+            `;
+            document.getElementById('qr-output').classList.add('hidden');
+        }
+    }
+
+    // --- AUTHENTICATION / SECURITY (unchanged) ---
+    function promptForAuth(title, message, mode = 'security', targetProfile = '') {
+        const modal = document.getElementById('authModal');
+        const titleEl = document.getElementById('auth-modal-title');
+        const messageEl = document.getElementById('auth-modal-message');
+        const emailInput = document.getElementById('auth-modal-email');
+        const targetProfileInput = document.getElementById('auth-modal-target-profile');
+        const passwordInput = document.getElementById('auth-modal-password');
+        const submitBtn = document.getElementById('auth-modal-submit');
+        const cancelBtn = document.getElementById('auth-modal-cancel');
+
+        titleEl.textContent = title;
+        messageEl.textContent = message;
+        emailInput.style.display = 'none';
+
+        if (mode === 'login') {
+            targetProfileInput.style.display = 'block';
+            targetProfileInput.value = targetProfile;
+            targetProfileInput.readOnly = true;
+            passwordInput.placeholder = `Password for ${targetProfile}`;
+        } else {
+            targetProfileInput.style.display = 'none';
+            passwordInput.placeholder = "Account Password";
+        }
+
+        passwordInput.value = '';
+        modal.style.display = 'flex';
+
+        submitBtn.replaceWith(submitBtn.cloneNode(true));
+        cancelBtn.replaceWith(cancelBtn.cloneNode(true));
+        const newSubmitBtn = document.getElementById('auth-modal-submit');
+        const newCancelBtn = document.getElementById('auth-modal-cancel');
+
+        return new Promise((resolve) => {
+            function handleSubmit() {
+                const password = passwordInput.value;
+                modal.style.display = 'none';
+                let emailToUse;
+                if (mode === 'login') {
+                    const targetProfileData = allProfiles[targetProfile];
+                    emailToUse = targetProfileData ? (targetProfileData.email || CURRENT_ACCOUNT_EMAIL) : CURRENT_ACCOUNT_EMAIL;
+                } else {
+                    emailToUse = CURRENT_ACCOUNT_EMAIL;
+                }
+                resolve({
+                    email: emailToUse,
+                    password: password,
+                    targetProfile: targetProfile
+                });
+            }
+
+            function handleCancel() {
+                modal.style.display = 'none';
+                resolve(null);
+            }
+
+            newSubmitBtn.addEventListener('click', handleSubmit);
+            newCancelBtn.addEventListener('click', handleCancel);
+        });
+    }
+
+    async function authenticateUser(email, password) {
+        if (!email) {
+            console.error("Authentication failed: No email provided.");
+            toast('Authentication Failed', 'Account email is missing.', false);
+            return false;
+        }
+        try {
+            await auth.signInWithEmailAndPassword(email, password);
+            await auth.signOut();
+            return true;
+        } catch (error) {
+            console.error("Authentication Error:", error);
+            toast('Authentication Failed', 'Incorrect password.', false);
+            return false;
+        }
+    }
+
+    async function performSecurityAction(action, authTitle, authMessage) {
+        if (CURRENT_AUTH_STATUS.toLowerCase() === 'admin') {
+            action();
+            return;
+        }
+        const credentials = await promptForAuth(authTitle, authMessage, 'unlock');
+        if (!credentials) return;
+        const isAuthenticated = await authenticateUser(credentials.email, credentials.password);
+        if (isAuthenticated) {
+            action();
+        }
+    }
+
+    async function handleRemoveDevice(targetProfileName, isTargetCurrentUser, isTargetAdmin) {
+        if (isTargetCurrentUser) {
+            toast('Error', 'To remove this device, please use the Log Out option.', false);
+            return;
+        }
+
+        const removeAction = async () => {
+            try {
+                const cleanupUpdates = {};
+                Object.keys(allProfiles).forEach(otherProfileName => {
+                    const otherProfile = allProfiles[otherProfileName];
+                    const pathBase = `accounts/${CURRENT_ACCOUNT_KEY}/profiles/${otherProfileName}`;
+
+                    if (otherProfile.syncingTo && otherProfile.syncingTo[targetProfileName] !== undefined) {
+                        cleanupUpdates[`${pathBase}/syncingTo/${targetProfileName}`] = null;
+                    }
+                    if (otherProfile.syncingWith && otherProfile.syncingWith[targetProfileName] !== undefined) {
+                        cleanupUpdates[`${pathBase}/syncingWith/${targetProfileName}`] = null;
+                    }
+                });
+
+                cleanupUpdates[`accounts/${CURRENT_ACCOUNT_KEY}/profiles/${targetProfileName}`] = null;
+
+                await db.ref().update(cleanupUpdates);
+
+                toast('Device Removed', `${targetProfileName} has been disconnected.`, true);
+                closeModal('deviceModal');
+            } catch (error) {
+                console.error("Error removing device:", error);
+                toast('Error', 'Failed to remove device.', false);
+            }
+        };
+
+        performSecurityAction(removeAction, 'Remove Device', `Confirm password to remove ${targetProfileName} from this account.`);
+    }
+
+    async function handleRemoveAllStandardDevices() {
+        const confirmed = confirm("Are you sure you want to remove all other standard devices?\n\nThis action cannot be undone.");
+        if (!confirmed) {
+            toast('Cancelled', 'No devices were removed.', true);
+            return;
+        }
+
+        const removeAction = async () => {
+            const updates = {};
+            let count = 0;
+
+            Object.keys(allProfiles).forEach(profileName => {
+                const profile = allProfiles[profileName];
+                const authStatusLower = (profile.authStatus || 'Standard').toLowerCase();
+
+                if (authStatusLower === 'standard' && profileName !== CURRENT_PROFILE_NAME) {
+                    updates[`accounts/${CURRENT_ACCOUNT_KEY}/profiles/${profileName}`] = null;
+                    count++;
+
+                    Object.keys(allProfiles).forEach(otherProfileName => {
+                        if (otherProfileName !== profileName) {
+                            const otherProfile = allProfiles[otherProfileName];
+                            const pathBase = `accounts/${CURRENT_ACCOUNT_KEY}/profiles/${otherProfileName}`;
+
+                            if (otherProfile.syncingTo && otherProfile.syncingTo[profileName] !== undefined) {
+                                updates[`${pathBase}/syncingTo/${profileName}`] = null;
+                            }
+                            if (otherProfile.syncingWith && otherProfile.syncingWith[profileName] !== undefined) {
+                                updates[`${pathBase}/syncingWith/${profileName}`] = null;
+                            }
+                        }
+                    });
+                }
+            });
+
+            if (count === 0) {
+                toast('No Action', 'No other standard devices to remove.', true);
+                return;
+            }
+
+            try {
+                await db.ref().update(updates);
+                toast('Devices Removed', `${count} standard devices have been removed.`, true);
+            } catch (error) {
+                console.error("Error removing standard devices:", error);
+                toast('Error', 'Failed to remove standard devices.', false);
+            }
+        };
+
+        performSecurityAction(removeAction, 'Remove All Standard Devices', 'Confirm password to remove all other standard devices.');
+    }
+
+    async function handleLoginAsAnother(targetProfileName) {
+        const targetProfile = allProfiles[targetProfileName];
+        if (!targetProfile) {
+            toast('Error', `Profile ${targetProfileName} not found.`, false);
+            return;
+        }
+
+        const targetIsAdmin = (targetProfile.authStatus || 'Standard').toLowerCase() === 'admin';
+
+        const loginAction = async () => {
+            localStorage.setItem(USERNAME_STORAGE, targetProfileName);
+            localStorage.setItem(AUTH_STATUS_STORAGE, targetProfile.authStatus || 'Standard');
+
+            toast('Profile Switched', `Logged in as ${targetProfileName}.`, true);
+            closeModal('deviceModal');
+            window.location.reload();
+        };
+
+        if (targetIsAdmin && CURRENT_AUTH_STATUS.toLowerCase() === 'standard') {
+            const credentials = await promptForAuth('Log into Admin Profile', `Enter the password for ${targetProfileName} to switch to this Admin profile.`, 'login', targetProfileName);
+            if (!credentials) return;
+            const isAuthenticated = await authenticateUser(credentials.email, credentials.password);
+            if (isAuthenticated) loginAction();
+        } else {
+            loginAction();
+        }
+    }
+
+    function handleLogout() {
+        localStorage.removeItem(ACCOUNT_KEY_STORAGE);
+        localStorage.removeItem(USERNAME_STORAGE);
+        localStorage.removeItem(AUTH_STATUS_STORAGE);
+        localStorage.removeItem(ACCOUNT_EMAIL_STORAGE);
+        window.location.href = "index.html";
+    }
+
+    function handleLoginAnotherProfile() {
+        toast('Redirecting', 'Please log in with the new account/profile.', true);
+        localStorage.removeItem(ACCOUNT_KEY_STORAGE);
+        localStorage.removeItem(USERNAME_STORAGE);
+        localStorage.removeItem(AUTH_STATUS_STORAGE);
+        localStorage.removeItem(ACCOUNT_EMAIL_STORAGE);
+        window.location.href = "index.html";
+    }
+
+    // --- RENDERING & FETCHING ---
+    function renderDevices(profiles) {
+        primaryList.innerHTML = '';
+        connectedList.innerHTML = '';
+
+        let foundCurrentUser = false;
+
+        Object.keys(profiles).forEach(profileName => {
+            const profile = profiles[profileName];
+            const isCurrentUser = profileName === CURRENT_PROFILE_NAME;
+
+            if (isCurrentUser) {
+                foundCurrentUser = true;
+                CURRENT_AUTH_STATUS = (profile.authStatus || 'Standard');
+                localStorage.setItem(AUTH_STATUS_STORAGE, CURRENT_AUTH_STATUS);
+                currentUserProfile = profile;
+
+                if (profile.email) {
+                    CURRENT_ACCOUNT_EMAIL = profile.email;
+                    localStorage.setItem(ACCOUNT_EMAIL_STORAGE, profile.email);
+                }
+            }
+
+            const authStatusLower = (profile.authStatus || 'Standard').toLowerCase();
+            const isPrimary = authStatusLower === 'admin';
+            const statusText = isPrimary ? 'Admin device' : 'Standard device';
+            const listToAppend = isPrimary ? primaryList : connectedList;
+
+            const itemHtml = `
+                <div class="item device-btn" 
+                     data-profile-name="${profileName}" 
+                     data-auth-status="${authStatusLower}"
+                     data-device-name="${profile.deviceName || 'N/A'}"
+                     data-created-at="${profile.createdAt || ''}"
+                     data-is-current-user="${isCurrentUser}">
+                    <div class="left">
+                        <div class="user-name">
+                            <span data-profile="${profileName}">
+                                ${profileName} ${isCurrentUser ? '(This Device)' : ''}
+                            </span>
+                        </div>
+                        <div class="authStatus">${statusText} • ${profile.deviceName || 'No Name'}</div>
+                    </div>
+                    <div class="chevron">›</div>
+                </div>
+            `;
+            listToAppend.insertAdjacentHTML('beforeend', itemHtml);
+        });
+
+        if (CURRENT_AUTH_STATUS.toLowerCase() === 'admin') {
+            addDeviceBtn.style.display = 'flex';
+        } else {
+            addDeviceBtn.style.display = 'none';
+        }
+
+        if (!foundCurrentUser && CURRENT_ACCOUNT_KEY) {
+            handleLogout();
+            toast('Error', 'Your profile was removed or not found. Logging out.', false);
+            return;
+        }
+
+        attachEventListeners();
+    }
+
+    /**
+     * Fetches device data and sets up realtime listeners.
+     * IMPORTANT: we refresh the device modal if it is open whenever profiles change,
+     * so modal content (including the sync switch) stays realtime.
+     */
+    function fetchAndRenderDevices() {
+        CURRENT_ACCOUNT_KEY = localStorage.getItem(ACCOUNT_KEY_STORAGE);
+        CURRENT_PROFILE_NAME = localStorage.getItem(USERNAME_STORAGE);
+
+        if (!CURRENT_ACCOUNT_KEY || !CURRENT_PROFILE_NAME) {
+            return;
+        }
+
+        const accountRef = db.ref(`accounts/${CURRENT_ACCOUNT_KEY}`);
+        const profilesRef = accountRef.child('profiles');
+
+        // Fetch account email once (keep local copy)
+        accountRef.once('value').then(snapshot => {
+            const accountData = snapshot.val();
+            if (accountData && accountData.email) {
+                CURRENT_ACCOUNT_EMAIL = accountData.email;
+                localStorage.setItem(ACCOUNT_EMAIL_STORAGE, accountData.email);
+            } else if (currentUserProfile && currentUserProfile.email) {
+                CURRENT_ACCOUNT_EMAIL = currentUserProfile.email;
+                localStorage.setItem(ACCOUNT_EMAIL_STORAGE, currentUserProfile.email);
+            }
+        }).catch(e => console.error("Error fetching account email:", e));
+
+        // Realtime listener for all profiles
+        profilesRef.on('value', (snapshot) => {
+            const profilesData = snapshot.val();
+            if (profilesData) {
+                allProfiles = profilesData;
+                renderDevices(profilesData);
+
+                // --- NEW: keep modal live-updated when open ---
+                if (deviceModal && deviceModal.classList.contains('active')) {
+                    // Use the name shown in the modal header
+                    const shownName = modalName.textContent && modalName.textContent.trim();
+                    if (shownName) {
+                        // Find the corresponding device button to simulate an "open" event
+                        const modalBtn = document.querySelector(`.device-btn[data-profile-name="${shownName}"]`);
+                        if (modalBtn) {
+                            // Re-open (refresh) the modal content with updated data
+                            try {
+                                openModal({ currentTarget: modalBtn });
+                            } catch (err) {
+                                console.error("Error refreshing open modal:", err);
+                            }
+                        } else {
+                            // If the profile no longer exists, close the modal to avoid stale UI
+                            closeModal('deviceModal');
+                        }
+                    }
+                }
+
+            } else {
+                primaryList.innerHTML = '';
+                connectedList.innerHTML = '<p class="p-4 text-center text-gray-500">No connected devices found.</p>';
+                if (CURRENT_ACCOUNT_KEY) {
+                    handleLogout();
+                    toast('Error', 'Account profiles were cleared. Logging out.', false);
+                }
+            }
+        }, (error) => {
+            console.error("Firebase fetch error:", error);
+            toast('Error', 'Failed to load device data.', false);
+        });
+    }
+
+    function attachEventListeners() {
+        document.querySelectorAll(".device-btn").forEach(btn => {
+            btn.onclick = null;
+            btn.addEventListener("click", openModal);
+        });
+
+        logoutBtn.onclick = handleLogout;
+        loginAnotherBtn.onclick = handleLoginAnotherProfile;
+        removeStandardDevicesBtn.onclick = handleRemoveAllStandardDevices;
+
+        if (CURRENT_AUTH_STATUS.toLowerCase() === 'admin') {
+            addDeviceBtn.onclick = null;
+            addDeviceBtn.addEventListener("click", openAddDeviceModal);
+        }
+
+        attachLinkingListeners();
+    }
+
+    function attachLinkingListeners(){
+        const btnGenerateQr = document.getElementById('btn-generate-qr');
+        const btnGenerateCode = document.getElementById('btn-generate-code');
+
+        if (btnGenerateQr) {
+            btnGenerateQr.onclick = null;
+            btnGenerateQr.addEventListener('click', generateQrCode);
+        }
+
+        if (btnGenerateCode) {
+            btnGenerateCode.onclick = null;
+            btnGenerateCode.addEventListener('click', generateCode);
+        }
+    }
+
+    async function unlockModalSecurity() {
+        const unlockAction = () => {
+            const profileName = document.getElementById("modalDeviceName").textContent;
+            openModal({currentTarget: document.querySelector(`.device-btn[data-profile-name="${profileName}"]`)}, true);
+        };
+
+        performSecurityAction(unlockAction, 'Unlock Security Options', 'Confirm password to reveal security options.');
+    }
+
+    function openModal(e, forceSecurity = false) {
+        const btn = e.currentTarget;
+        const targetProfileName = btn.dataset.profileName;
+        const targetProfile = allProfiles[targetProfileName];
+
+        if (!targetProfile || !currentUserProfile) return;
+
+        const isCurrentUserAdmin = CURRENT_AUTH_STATUS.toLowerCase() === 'admin';
+        const isTargetAdmin = (targetProfile.authStatus || 'Standard').toLowerCase() === 'admin';
+        const isTargetCurrentUser = btn.dataset.isCurrentUser === 'true';
+
+        const syncingWith = targetProfile.syncingWith ? Object.keys(targetProfile.syncingWith).filter(name => targetProfile.syncingWith[name] === true) : [];
+        const syncingTo = targetProfile.syncingTo ? Object.keys(targetProfile.syncingTo).filter(name => targetProfile.syncingTo[name] === true) : [];
+
+        const allSyncedProfilesSet = new Set([...syncingWith, ...syncingTo]);
+        allSyncedProfilesSet.delete(targetProfileName);
+
+        const syncingDisplay = allSyncedProfilesSet.size > 0 ? Array.from(allSyncedProfilesSet).join(', ') : 'None';
+
+        // Determine whether current user has this target in their syncingTo (outbound)
+        const isCurrentlySyncedByMe = currentUserProfile && currentUserProfile.syncingTo && currentUserProfile.syncingTo[targetProfileName] === true;
+
+        // Disable the switch only when viewing own profile (can't toggle self)
+        const syncDisabled = isTargetCurrentUser;
+
+        modalName.textContent = targetProfileName;
+
+        let modalHtml = `
+            <div class="section-title">DEVICE INFO</div>
+            <div class="list">
+                <div class="item profile-name-item">
+                    <div class="left">
+                        <div class="user-name">
+                            <span data-profile="${targetProfileName}" ${isTargetCurrentUser ? 'contenteditable="false" class="editable-name"' : ''}>
+                                ${targetProfileName}
+                            </span>
+                        </div>
+                        <div class="authStatus">Username </div>
+                    </div> 
+                    ${isTargetCurrentUser ? '<i class="fa fa-edit"></i>' : ''}
+                </div>
+                <div class="item">
+                    <div class="left">
+                        <div class="user-name">${targetProfile.deviceName || 'No Name'}</div>
+                        <div class="authStatus">Device Name</div>
+                    </div>
+                </div>
+                <div class="item">
+                    <div class="left">
+                        <div class="user-name">${formatTimestamp(targetProfile.createdAt)}</div>
+                        <div class="authStatus">Created On</div>
+                    </div>
+                </div>
+                <div class="item">
+                    <div class="left">
+                        <div class="user-name">${syncingDisplay}</div>
+                        <div class="authStatus">Syncing with</div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        let securityOptionsVisible = isCurrentUserAdmin || isTargetCurrentUser || forceSecurity;
+
+        modalHtml += `
+            <div class="section-title">SECURITY</div>
+            <div class="list">
+                <div class="item ${!securityOptionsVisible ? 'disabled-item' : ''}">
+                    <div class="left">
+                        <div class="user-name">${isTargetAdmin ? 'Admin Device' : 'Standard Device'}</div>
+                        <div class="authStatus">Authorization Status</div>
+                    </div>
+                </div>
+        `;
+
+        if (securityOptionsVisible) {
+            if (!isTargetCurrentUser) {
+                modalHtml += `<div class="item safe-action" data-action="log-in-as" data-profile="${targetProfileName}"><div class="safe">Log into this profile</div></div>`;
+            }
+
+            if (isTargetAdmin) {
+                if (!isTargetCurrentUser && isCurrentUserAdmin) {
+                    modalHtml += `<div class="item danger-action" data-action="demote" data-profile="${targetProfileName}"><div class="danger">Remove Admin Status</div></div>`;
+                }
+                if (!isTargetCurrentUser) {
+                    modalHtml += `
+                        <div class="item danger-action" data-action="remove-device" data-profile="${targetProfileName}" data-is-current="${isTargetCurrentUser}" data-is-admin="${isTargetAdmin}">
+                            <div class="danger">Remove Device</div>
+                        </div>`;
+                }
+            } else {
+                if (isCurrentUserAdmin) {
+                    modalHtml += `<div class="item safe-action" data-action="promote" data-profile="${targetProfileName}"><div class="safe">Make Admin Device</div></div>`;
+                }
+                modalHtml += `
+                    <div class="item danger-action" data-action="remove-device" data-profile="${targetProfileName}" data-is-current="${isTargetCurrentUser}" data-is-admin="${isTargetAdmin}">
+                        <div class="danger">Remove Device</div>
+                    </div>
+                `;
+            }
+
+        } else if (CURRENT_AUTH_STATUS.toLowerCase() === 'standard' && !isCurrentUserAdmin && !isTargetCurrentUser) {
+            modalHtml += `
+                <div class="item safe-action" id="unlock-security-btn">
+                    <div class="safe">Unlock Security Options</div>
+                    <div class="chevron">›</div>
+                </div>
+            `;
+        }
+
+        modalHtml += `</div>`;
+
+        const syncItemClass = syncDisabled ? 'disabled-item' : '';
+
+        modalHtml += `
+            <div class="section-title">Action</div>
+            <div class="list">
+                <div class="item ${syncItemClass}">
+                    <div class="left"><div class="safe">Sync data</div></div>
+                    <label class="ios-toggle">
+                        <input type="checkbox" id="sync-switch" ${isCurrentlySyncedByMe ? 'checked' : ''} ${syncDisabled ? 'disabled' : ''}>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+        `;
+
+        modalContent.innerHTML = modalHtml;
+
+        const syncSwitch = document.getElementById('sync-switch');
+        if (syncSwitch && !syncDisabled) {
+            syncSwitch.onchange = (e) => {
+                toggleSync(targetProfileName, e.target.checked);
+            };
+        }
+
+        const editableNameSpan = document.querySelector(".modal .user-name span.editable-name");
+        if (editableNameSpan) {
+            editableNameSpan.setAttribute('contenteditable', 'false');
+            editableNameSpan.onclick = handleNameEdit;
+        }
+
+        document.querySelectorAll(".modal .danger-action, .modal .safe-action").forEach(item => {
+            item.onclick = (e) => handleModalSecurityAction(e.currentTarget);
+        });
+
+        const unlockBtn = document.getElementById('unlock-security-btn');
+        if (unlockBtn) {
+            unlockBtn.onclick = unlockModalSecurity;
+        }
+
+        deviceModal.classList.add("active");
+    }
+
+    async function handleModalSecurityAction(btn) {
+        const action = btn.dataset.action;
+        const profileName = btn.dataset.profile;
+        const isCurrent = btn.dataset.isCurrent === 'true';
+        const isTargetAdmin = btn.dataset.isAdmin === 'true';
+
+        switch (action) {
+            case 'remove-device':
+                handleRemoveDevice(profileName, isCurrent, isTargetAdmin);
+                break;
+            case 'promote':
+                performSecurityAction(() => updateAuthStatus(profileName, 'Admin'),
+                    'Make Admin', `Confirm password to promote ${profileName} to Admin.`);
+                break;
+            case 'demote':
+                performSecurityAction(() => updateAuthStatus(profileName, 'Standard'),
+                    'Remove Admin', `Confirm password to demote ${profileName} to Standard.`);
+                break;
+            case 'log-in-as':
+                handleLoginAsAnother(profileName);
+                break;
+            default:
+                break;
+        }
+    }
+
+    async function updateAuthStatus(profileName, newStatus) {
+        const path = `accounts/${CURRENT_ACCOUNT_KEY}/profiles/${profileName}/authStatus`;
+        try {
+            await db.ref(path).set(newStatus);
+            toast('Status Updated', `${profileName} is now a ${newStatus} device.`, true);
+
+            if (profileName === CURRENT_PROFILE_NAME) {
+                CURRENT_AUTH_STATUS = newStatus;
+                localStorage.setItem(AUTH_STATUS_STORAGE, newStatus);
+            }
+
+            closeModal('deviceModal');
+        } catch (error) {
+            console.error("Error updating auth status:", error);
+            toast('Error', 'Failed to update authorization status.', false);
+        }
+    }
+
+    function openAddDeviceModal() {
+        if (CURRENT_AUTH_STATUS.toLowerCase() !== 'admin') return;
+        addDeviceModal.classList.add('active');
+        attachLinkingListeners();
+    }
+
+    // Device linking functions (generateQrCode & generateCode) unchanged except minimal safety checks
+    async function generateQrCode() {
+        if (!CURRENT_ACCOUNT_KEY) return;
+        const token = { type: 'login', account: CURRENT_ACCOUNT_KEY, createdAt: Date.now() };
+        const qrDiv = document.getElementById('qr-output');
+        qrDiv.innerHTML = `<p class="text-sm font-semibold text-gray-700 mb-3">Scan this QR Code to link a new device:</p>`;
+        qrDiv.classList.remove('hidden');
+
+        const q = document.createElement('div');
+        q.id = 'generated-qr';
+        q.className = 'flex justify-center p-3 bg-white rounded-lg';
+        qrDiv.appendChild(q);
+
+        const payload = JSON.stringify(token);
+        if(window.qrCodeInstance) window.qrCodeInstance.clear();
+        window.qrCodeInstance = new QRCode(q, {
+            text: payload,
+            width: 200,
+            height: 200,
+            colorDark : "#1f2937",
+            colorLight : "#ffffff"
+        });
+        toast('QR Generated', 'The QR code is ready to be scanned by a new device.');
+    }
+
+    async function generateCode() {
+        if (!CURRENT_ACCOUNT_KEY) return;
+        const code = Math.random().toString(36).toUpperCase().replace(/[^A-Z0-9]/g,'').slice(2,8).padEnd(6,'A').slice(0,6);
+        const btn = document.getElementById('btn-generate-code');
+        const originalText = btn ? btn.innerHTML : 'Generate';
+        if (btn) { btn.innerHTML = '<div class="loader mx-2"></div> Generating...'; btn.disabled = true; }
+
+        const meta = { createdBy: CURRENT_PROFILE_NAME, createdAt: Date.now(), expiresAt: Date.now() + (1000*60*60) };
+        try {
+            await rdb.ref('accounts/' + CURRENT_ACCOUNT_KEY + '/codes/' + code).set(meta);
+
+            const qrDiv = document.getElementById('qr-output');
+            qrDiv.classList.remove('hidden');
+
+            qrDiv.innerHTML = `<div class="p-4 bg-white rounded-lg border border-gray-200">
+                <p class="text-sm font-semibold text-gray-700 mb-2">Generated 6-Character Code (Expires in 1 hour):</p>
+                <div class="font-mono text-3xl text-center mb-4 text-indigo-800 font-bold tracking-widest">${code}</div>
+                <p class="text-sm text-gray-500 mb-3 text-center">Or scan the equivalent QR:</p>
+                <div id="code-qr" class="flex justify-center"></div>
+            </div>`;
+
+            if(window.qrCodeInstance) window.qrCodeInstance.clear();
+            window.qrCodeInstance = new QRCode(document.getElementById('code-qr'), {
+                text: JSON.stringify({ type: 'code', account: CURRENT_ACCOUNT_KEY, code: code }),
+                width: 160,
+                height: 160,
+                colorDark : "#1f2937",
+                colorLight : "#ffffff"
+            });
+
+            toast('Code Generated', `Code ${code} saved and displayed (Expires in 1 hour).`);
+        } catch (error) {
+            console.error("Error generating code:", error);
+            toast('Error', 'Failed to generate code.', false);
+        } finally {
+            if (btn) { btn.innerHTML = originalText; btn.disabled = false; }
+        }
+    }
+
+    // --- INITIALIZATION ---
+    document.addEventListener('DOMContentLoaded', fetchAndRenderDevices);
+</script>
+<script>
+/* =========================================================
+   LIVE DEVICE SEARCH (SCRIPT-ONLY)
+========================================================= */
+document.addEventListener('DOMContentLoaded', () => {
+    // Prevent duplicate injection
+    if (document.getElementById('deviceSearch')) return;
+
+    // Create search input
+    const searchInput = document.createElement('input');
+    searchInput.id = 'deviceSearch';
+    searchInput.type = 'text';
+    searchInput.placeholder = 'Search devices…';
+
+    // iOS-like styling (inline to avoid CSS edits)
+    searchInput.style.width = 'calc(100% - 32px)';
+    searchInput.style.margin = '0 16px 12px';
+    searchInput.style.padding = '12px 14px';
+    searchInput.style.borderRadius = '12px';
+    searchInput.style.border = '1px solid #D1D1D6';
+    searchInput.style.fontSize = '16px';
+    searchInput.style.outline = 'none';
+    searchInput.style.background = '#FFFFFF';
+
+    // Insert below header
+    const header = document.querySelector('.header');
+    if (header) {
+        header.insertAdjacentElement('afterend', searchInput);
+    }
+
+    // Live filtering
+    searchInput.addEventListener('input', () => {
+        const query = searchInput.value.toLowerCase().trim();
+
+        document.querySelectorAll('.device-btn').forEach(item => {
+            const profileName = (item.dataset.profileName || '').toLowerCase();
+            const deviceName = (item.dataset.deviceName || '').toLowerCase();
+
+            item.style.display =
+                profileName.includes(query) || deviceName.includes(query)
+                    ? 'flex'
+                    : 'none';
+        });
+    });
+});
+</script>
+</body>
+</html>
