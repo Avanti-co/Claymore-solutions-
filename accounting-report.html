@@ -513,7 +513,7 @@ const MenuBar = () => {
     bottom: 0; 
     left: 0; 
     width: 100%; 
-    height: 70px; 
+    
     background: rgba(255, 255, 255, 0.85); 
     backdrop-filter: blur(20px); 
     -webkit-backdrop-filter: blur(20px); 
@@ -522,7 +522,9 @@ const MenuBar = () => {
     justify-content: space-around; 
     align-items: center; 
     z-index: 10; 
-    height: 97px; 
+    padding-top: 14px;
+     padding-bottom: constant(safe-area-inset-bottom, 20px);
+padding-bottom: env(safe-area-inset-bottom, 20px); 
     padding-bottom: 25px;
     font-family: 'Inter', sans-serif;
 
