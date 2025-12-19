@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, viewport-fit=cover, initial-scale=0.94, minimum-scale=0.94 , maximum-scale=0.94, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=0.94, minimum-scale=0.94 ,viewport-fit=cover, maximum-scale=0.94, user-scalable=no">
     <title>Inventory Management</title>
     <script src="https://cdn.tailwindcss.com"></script>
 
@@ -201,6 +201,7 @@ border: 1px solid #e5e5ea;
     padding-top: 14px; 
     padding-bottom: constant(safe-area-inset-bottom, 25px);
 padding-bottom: env(safe-area-inset-bottom, 25px);
+   
     font-family: 'Inter', sans-serif;
 ">
     
@@ -527,14 +528,14 @@ async function fetchData() {
 
             let count = e.initialCount || 0;
             datesKeys.forEach(dk => {
-                if (dk >= e.startDate) {
-                    const day = fullStatsData[dk]?.items?.[id];
-                    if (day) {
-                        const sales = (day.opening || 0) + (day.orders || 0) - (day.closing || 0);
-                        count += (sales - (day.orders || 0));
-                    }
-                }
-            });
+    if (dk >= e.startDate && dk <= yesterdayStr) {
+        const day = fullStatsData[dk]?.items?.[id];
+        if (day) {
+            const sales = (day.opening || 0) + (day.orders || 0) - (day.closing || 0);
+            count += (sales - (day.orders || 0));
+        }
+    }
+});
 
             const name = Object.values(fullStatsData).reverse()
                 .find(d => d.items?.[id])?.items[id].name || "Unknown";
@@ -682,7 +683,7 @@ window.openItemModal = function(id) {
     document.getElementById('modal-available-units').textContent = `${item.stock} units available`;
     document.getElementById('modal-selling-price').textContent = `${formatCurrency(item.price)} per unit`;
     document.getElementById('modal-valued-at').textContent = `${formatCurrency(item.stock * item.price)} at selling price`;
-    document.getElementById('empties-end-date').textContent = today;
+    document.getElementById('empties-end-date').textContent = yesterdayStr;
 
     const toggle = document.getElementById('toggle-empty-bottles');
     const initialInput = document.getElementById('initial-empties-input');
@@ -702,18 +703,18 @@ window.openItemModal = function(id) {
     }
 
     const calculateLocalEmpties = (initialVal, startDate) => {
-        let count = initialVal;
-        datesKeys.forEach(dk => {
-            if (dk >= startDate) {
-                const day = fullStatsData[dk]?.items?.[id];
-                if (day) {
-                    const sales = (day.opening || 0) + (day.orders || 0) - (day.closing || 0);
-                    count += (sales - (day.orders || 0));
-                }
+    let count = initialVal;
+    datesKeys.forEach(dk => {
+        if (dk >= startDate && dk <= yesterdayStr) {
+            const day = fullStatsData[dk]?.items?.[id];
+            if (day) {
+                const sales = (day.opening || 0) + (day.orders || 0) - (day.closing || 0);
+                count += (sales - (day.orders || 0));
             }
-        });
-        return Math.max(0, count);
-    };
+        }
+    });
+    return Math.max(0, count);
+};
 
     toggle.onchange = async (e) => {
         const accName = localStorage.getItem('AV_ledger_account_key');
