@@ -412,6 +412,11 @@ User: (props) => (
                     dailyProductMetrics: Object.values(dailyProductMetrics) 
                 };
             }, []);
+
+const today = new Date();
+const yesterday = new Date(today);
+yesterday.setDate(today.getDate() - 1);
+const yesterdayStr = yesterday.toISOString().split('T')[0];
             
             // --- INVENTORY METRICS CALCULATOR (FIXED) ---
             const calculateInventoryMetrics = useCallback((allDatesData, emptiesData) => {
@@ -453,19 +458,19 @@ User: (props) => (
 
                     let emptiesCount = initialCount;
                     
-                    datesKeys.filter(dateKey => dateKey >= startDateKey).forEach(dateKey => {
-                        const dayData = allDatesData[dateKey].items && allDatesData[dateKey].items[itemId];
-                        if (dayData) {
-                            const opening = dayData.opening || 0;
-                            const orders = dayData.orders || 0;
-                            const closing = dayData.closing || 0;
-                            
-                            const sales = opening + orders - closing;
-                            
-                            emptiesCount += (sales - orders);
-                        }
-                    });
-                    
+                    datesKeys
+  .filter(dateKey => dateKey >= startDateKey && dateKey <= yesterdayStr)
+  .forEach(dateKey => {
+      const dayData = allDatesData[dateKey].items && allDatesData[dateKey].items[itemId];
+      if (dayData) {
+          const opening = dayData.opening || 0;
+          const orders = dayData.orders || 0;
+          const closing = dayData.closing || 0;
+
+          const sales = opening + orders - closing;
+          emptiesCount += (sales - orders);
+      }
+  });
                     totalEmptiesUnits += Math.max(0, emptiesCount);
                 });
                 
@@ -1173,7 +1178,9 @@ const handleLogout = async () => {
                     {value}
                 </p>
 
-                <p className="text-[13px] text-gray-600 leading-snug line-clamp-2">
+ <span className="text-[15px] font-medium text-gray-500 uppercase">{title || 'Transaction'}</span>
+
+                <p className="text-[13px] text-gray-600 leading-snug line-clamp-2 ">
                     {sub}
                 </p>
             </Card>
@@ -1258,7 +1265,7 @@ const handleLogout = async () => {
             
             const top5Transactions = allTransactions
                 .sort((a, b) => b.amount - a.amount)
-                .slice(0, 5)
+                .slice(0, 1000)
                 .map(t => ({
                     title: t.title,
                     value: t.value,
