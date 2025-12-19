@@ -166,22 +166,19 @@
 
         // --- ACCOUNTING LOGIC & DATA FETCHING HOOK ---
 
-        function useAccountingData(startDateStr, endDateStr) {
+                        function useAccountingData(startDateStr, endDateStr) {
             const [data, setData] = useState(null);
             const [loading, setLoading] = useState(true);
             const [error, setError] = useState(null);
             const [isGFAOk, setIsGFAOk] = useState(true);
+            const [includedDates, setIncludedDates] = useState([]);
 
-            // Fetch Local Storage Keys (Stable values)
             const accountName = localStorage.getItem('AV_ledger_account_key');
             const username = localStorage.getItem('AV_ledger_username');
-            
-            const userRootPath = accountName ? `accounts/${accountName}/profiles/${username}` : null;
             const settingsPath = accountName ? `accounts/${accountName}/settings` : null;
 
             const fetchData = useCallback(async () => {
                 if (!accountName || !username || !startDateStr || !endDateStr) {
-                    setError("Account Name, Username, or Date Range not fully specified.");
                     setLoading(false);
                     return;
                 }
@@ -190,247 +187,132 @@
                 setError(null);
                 
                 try {
-                    // (GFA logic remains the same)
-                    let effectiveUsername = username;
-                    let accountPath = userRootPath; 
-
                     const gfaSnapshot = await database.ref(`${settingsPath}/${username}/GFA`).once('value');
-                    const isGFA = gfaSnapshot.val() === true;
-                    if (!isGFA) {
+                    if (gfaSnapshot.val() !== true) {
                         setIsGFAOk(false);
                         setLoading(false);
                         return;
                     }
                     setIsGFAOk(true);
                     
-                    // --- CORRECTION: Data path based on sync setting ---
-                    const syncAllSnapshot = await database.ref(`${settingsPath}/synchronization`).once('value');
-                    const syncAll = syncAllSnapshot.val() === 'all';
-                    
-                    let dataRootPath;
-                    
-                    if (syncAll) {
-                        dataRootPath = `accounts/${accountName}/global_ledger/avanti_stats/dates`;
-                    } else {
-                        const syncWithSnapshot = await database.ref(`${userRootPath}/syncingWith`).once('value');
-                        const syncingWith = syncWithSnapshot.val();
-                        
-                        if (syncingWith && typeof syncingWith === 'object') {
-                            const syncUser = Object.keys(syncingWith).find(u => syncingWith[u] === true);
-                            if (syncUser) {
-                                effectiveUsername = syncUser;
-                                accountPath = `accounts/${accountName}/profiles/${effectiveUsername}`;
-                            }
-                        }
-                        dataRootPath = `${accountPath}/avanti_stats/dates`;
-                    }
+                    const syncSnap = await database.ref(`${settingsPath}/synchronization`).once('value');
+                    const dataRootPath = syncSnap.val() === 'all' 
+                        ? `accounts/${accountName}/global_ledger/avanti_stats/dates` 
+                        : `accounts/${accountName}/profiles/${username}/avanti_stats/dates`;
 
-                    // 2. Fetch data
-                    const dateRef = database.ref(dataRootPath);
-                    const snapshot = await dateRef.once('value');
+                    const snapshot = await database.ref(dataRootPath).once('value');
                     const datesData = snapshot.val() || {};
 
-                    // 3. Process Data
-                    let salesTotal = 0;
-                    let purchasesTotalCost = 0;
-                    let purchasesTotalSelling = 0;
-                    let incomesTotal = 0;
-                    let expensesTotal = 0;
-                    let allIncomes = [];
-                    let allExpenses = [];
-                    
-                    let totalOpeningStockCost = 0;
-                    let totalOpeningStockSelling = 0;
-                    let totalClosingStockCost = 0;
-                    let totalClosingStockSelling = 0;
-                    
-                    const dateKeys = Object.keys(datesData).filter(dateStr => {
-                        return dateStr >= startDateStr && dateStr <= endDateStr;
-                    }).sort(); 
+                    // 1. FILTER FOR BALANCED DATES ONLY
+                    const validKeys = Object.keys(datesData)
+                        .filter(k => k >= startDateStr && k <= endDateStr && datesData[k].balanced === true)
+                        .sort();
 
-                    if (dateKeys.length === 0) {
-                        setData({ 
-                            sales: 0, 
-                            openingStockCost: 0, openingStockSelling: 0, 
-                            purchasesCost: 0, purchasesSelling: 0, 
-                            closingStockCost: 0, closingStockSelling: 0, 
-                            incomes: [], expenses: [], totalIncomes: 0, totalExpenses: 0,
-                        });
+                    setIncludedDates(validKeys);
+
+                    if (validKeys.length === 0) {
+                        setData({ sales: 0, openingStockCost: 0, openingStockSelling: 0, purchasesCost: 0, purchasesSelling: 0, closingStockCost: 0, closingStockSelling: 0, incomes: [], expenses: [], totalIncomes: 0, totalExpenses: 0 });
                         setLoading(false);
                         return;
                     }
 
-                    // --- START MODIFIED LOGIC: Consolidate data by Item ID first ---
-                    const firstDateKey = dateKeys[0];
-                    const lastDateKey = dateKeys[dateKeys.length - 1];
-                    const itemDataMap = new Map(); // Map to hold accumulated item state
-                    const openingItems = datesData[firstDateKey]?.items || {}; // Items on the start date
-                    
-                    dateKeys.forEach(dateKey => {
-                        const dailyData = datesData[dateKey];
-                        if (dailyData.items) {
-                            // Ensure iteration over item IDs
-                            Object.entries(dailyData.items).forEach(([itemId, item]) => {
-                                // Consolidate item data across the period, keyed by ID
-                                if (!itemDataMap.has(itemId)) {
-                                    itemDataMap.set(itemId, { 
-                                        totalOrdersQty: 0,
-                                        firstDayOpening: openingItems[itemId]?.opening || 0, // Opening on the FIRST day of report
-                                        lastDayClosing: 0,
+                    const firstKey = validKeys[0];
+                    const lastKey = validKeys[validKeys.length - 1];
+                    const itemMap = new Map();
+                    let allIncomes = [];
+                    let allExpenses = [];
+                    let incomesTotal = 0;
+                    let expensesTotal = 0;
+
+                    validKeys.forEach(dateKey => {
+                        const day = datesData[dateKey];
+                        
+                        // Process Items
+                        if (day.items) {
+                            Object.entries(day.items).forEach(([id, item]) => {
+                                if (!itemMap.has(id)) {
+                                    itemMap.set(id, {
+                                        periodOpening: (dateKey === firstKey) ? (item.opening || 0) : 0,
+                                        totalPurchases: 0,
+                                        periodClosing: 0,
                                         price: item.price || 0,
-                                        lastOrderCost: item.lastOrderCost || 0,
+                                        cost: item.lastOrderCost > 0 ? item.lastOrderCost : (item.price * 0.7),
+                                        initialized: false
                                     });
                                 }
+                                const entry = itemMap.get(id);
                                 
-                                const currentItemState = itemDataMap.get(itemId);
-
-                                // Accumulate totals for the period
-                                currentItemState.totalOrdersQty += item.orders || 0;
-                                
-                                // Update closing stock only on the last date key
-                                if (dateKey === lastDateKey) {
-                                    currentItemState.lastDayClosing = item.closing || 0;
+                                // NEW ITEM RECLASSIFICATION:
+                                // If item appears for the first time AFTER the firstKey,
+                                // treat its starting "opening" as a purchase.
+                                if (dateKey > firstKey && !entry.initialized) {
+                                    entry.totalPurchases += (item.opening || 0);
                                 }
                                 
-                                // Update cost/price (using the latest values available for the item)
-                                currentItemState.price = item.price || currentItemState.price;
-                                currentItemState.lastOrderCost = item.lastOrderCost || currentItemState.lastOrderCost;
+                                entry.totalPurchases += (item.orders || 0);
+                                if (dateKey === lastKey) entry.periodClosing = (item.closing || 0);
+                                entry.price = item.price || entry.price;
+                                entry.initialized = true;
+                            });
+                        }
 
-                                // Update the map
-                                itemDataMap.set(itemId, currentItemState);
+                        // FIXED: Process Incomes & Expenses with descriptions
+                        if (day.incomes) {
+                            Object.values(day.incomes).forEach(inc => {
+                                const amount = parseFloat(inc.amount || 0);
+                                incomesTotal += amount;
+                                allIncomes.push({ name: inc.description || 'General Income', amount: amount });
                             });
                         }
-                        
-                        // Incomes and Expenses (Accumulative)
-                        if (dailyData.incomes) {
-                            Object.values(dailyData.incomes).forEach(inc => {
-                                incomesTotal += inc.amount || 0;
-                                allIncomes.push({ name: inc.description || 'General Income', amount: inc.amount || 0 });
-                            });
-                        }
-                        
-                        if (dailyData.expenses) {
-                            Object.values(dailyData.expenses).forEach(exp => {
-                                expensesTotal += exp.amount || 0;
-                                allExpenses.push({ name: exp.description || 'General Expense', amount: exp.amount || 0 });
+                        if (day.expenses) {
+                            Object.values(day.expenses).forEach(exp => {
+                                const amount = parseFloat(exp.amount || 0);
+                                expensesTotal += amount;
+                                allExpenses.push({ name: exp.description || 'General Expense', amount: amount });
                             });
                         }
                     });
 
-                    // 4. Final Item Calculation Loop (After all accumulation and ID checking)
-                    itemDataMap.forEach(item => {
-                        const { firstDayOpening, totalOrdersQty, lastDayClosing, price, lastOrderCost } = item;
-                        
-                        // --- COST & NRV VALUATION ---
-                        // Rule: Cost price is set by NRV (0.7 * Price) if lastOrderCost is not found (> 0).
-                        const costValuation = (lastOrderCost > 0) 
-                            ? lastOrderCost
-                            : (price > 0) 
-                                ? (0.7 * price) // Implementation of NRV rule proxy
-                                : 0; 
+                    // Final Tally
+                    let sRev = 0, pCost = 0, pSell = 0, oCost = 0, oSell = 0, cCost = 0, cSell = 0;
 
-                        // --- NEW ITEM IDENTIFICATION & ORDERS RECLASSIFICATION ---
-                        const isNewItem = firstDayOpening === 0;
-
-                        let openingStockQty = firstDayOpening;
-                        let purchasesQty = totalOrdersQty;
-                        
-                        // If it's a new item (opening stock on the first day is 0)
-                        // Its first day opening stock quantity (which is 0 by definition of 'new item')
-                        // plus any subsequent orders are treated as purchases.
-                        if (isNewItem) {
-                             // New items have 0 opening stock for the report. 
-                             // ALL stock received (totalOrdersQty) is classified as Purchases.
-                             openingStockQty = 0; 
-                             purchasesQty = totalOrdersQty; 
-                             
-                             // NOTE: The request suggests reclassifying *opening* stock to *orders* if the item has no orders.
-                             // Given the data structure, if firstDayOpening is 0, the totalOrdersQty already captures subsequent purchases.
-                             // We only need to ensure the Opening Stock is 0 and Purchases cover all stock received in the period.
-                             
-                             // If the original data had a "first day opening" but the item was not in a "pre-report"
-                             // ledger, the current check ensures that if firstDayOpening is 0 (the item is truly new to the report),
-                             // it starts from 0 stock and all stock is a purchase. This correctly satisfies the spirit of the rule.
-                        } else {
-                            // Standard item
-                            openingStockQty = firstDayOpening;
-                            purchasesQty = totalOrdersQty;
-                        }
-
-                        // --- Sales Calculation ---
-                        // The actual sales quantity is Opening + Purchases - Closing.
-                        const actualSalesQuantity = openingStockQty + purchasesQty - lastDayClosing;
-                        if (actualSalesQuantity > 0) {
-                            salesTotal += actualSalesQuantity * price;
-                        }
-                        
-                        // --- Purchases Calculation (Accumulative) ---
-                        purchasesTotalCost += purchasesQty * costValuation;
-                        purchasesTotalSelling += purchasesQty * price; 
-                        
-                        // --- Stock Valuation Calculation ---
-                        totalOpeningStockCost += openingStockQty * costValuation; 
-                        totalOpeningStockSelling += openingStockQty * price;
-
-                        totalClosingStockCost += lastDayClosing * costValuation; 
-                        totalClosingStockSelling += lastDayClosing * price;
+                    itemMap.forEach(item => {
+                        const qtySold = (item.periodOpening + item.totalPurchases) - item.periodClosing;
+                        sRev += Math.max(0, qtySold) * item.price;
+                        pCost += item.totalPurchases * item.cost;
+                        pSell += item.totalPurchases * item.price;
+                        oCost += item.periodOpening * item.cost;
+                        oSell += item.periodOpening * item.price;
+                        cCost += item.periodClosing * item.cost;
+                        cSell += item.periodClosing * item.price;
                     });
-                    
-                    // --- END MODIFIED LOGIC ---
 
-
-                    // 4. Set Final Processed Data 
                     setData({
-                        sales: salesTotal,
-                        
-                        openingStockCost: totalOpeningStockCost, 
-                        openingStockSelling: totalOpeningStockSelling, 
-                        
-                        purchasesCost: purchasesTotalCost,
-                        purchasesSelling: purchasesTotalSelling,
-                        
-                        closingStockCost: totalClosingStockCost,
-                        closingStockSelling: totalClosingStockSelling,
-                        
-                        incomes: allIncomes,
-                        expenses: allExpenses,
-                        totalIncomes: incomesTotal,
-                        totalExpenses: expensesTotal,
+                        sales: sRev, openingStockCost: oCost, openingStockSelling: oSell,
+                        purchasesCost: pCost, purchasesSelling: pSell,
+                        closingStockCost: cCost, closingStockSelling: cSell,
+                        incomes: allIncomes, expenses: allExpenses,
+                        totalIncomes: incomesTotal, totalExpenses: expensesTotal,
                     });
 
                 } catch (err) {
-                    console.error("Firebase fetch error:", err);
-                    setError("Failed to fetch accounting data. Please check connection and data path.");
+                    setError("Data sync error");
                 } finally {
                     setLoading(false);
                 }
+            }, [startDateStr, endDateStr, accountName, username, settingsPath]);
 
-            }, [accountName, username, startDateStr, endDateStr]);
+            useEffect(() => { fetchData(); }, [fetchData]);
 
-            useEffect(() => {
-                fetchData();
-            }, [fetchData]);
-
-            // Transform data structure for simpler access in the component
             const transformedData = useMemo(() => {
                 if (!data) return null;
-                
-                // Calculate Net Profit using COST basis
                 const cogs = data.openingStockCost + data.purchasesCost - data.closingStockCost;
-                const grossProfit = data.sales - cogs;
-                const netProfit = grossProfit + data.totalIncomes - data.totalExpenses;
-                
-                return {
-                    ...data,
-                    cogs,
-                    grossProfit,
-                    netProfit,
-                };
-            }, [data]);
-            
+                return { ...data, cogs, grossProfit: data.sales - cogs, netProfit: (data.sales - cogs) + data.totalIncomes - data.totalExpenses, includedDates };
+            }, [data, includedDates]);
 
             return { data: transformedData, loading, error, isGFAOk };
         }
+
 
         // --- UI BLOCKS (Card, ReportModal, etc. - These remain the same) ---
         
@@ -446,7 +328,7 @@
         const ReportModal = ({ isOpen, onClose, title, children }) => {
             if (!isOpen) return null;
             return (
-                <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center p-0 sm:p-4 animate-fade-in">
+                <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center p-0 sm:p-4 animate-fade-in pt-10">
                     <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
                     <div className="relative w-full max-w-lg h-[95vh] sm:h-[85vh] bg-gray-50 rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col transform transition-transform duration-300 ease-out animate-slide-up">
                         
@@ -1067,7 +949,7 @@ padding-bottom: env(safe-area-inset-bottom, 20px);
             </div>
         </div>
 
-        <div className="flex p-1 bg-[#2b598b] rounded-lg overflow-x-auto no-scrollbar">
+        <div className="flex p-1 bg-[#2b598b] rounded-lg overflow-x-auto 	no-scrollbar">
             <a className="flex-1 text-center py-1.5 px-3 rounded-md text-xs font-bold transition-all whitespace-nowrap bg-[#3f72af] text-white shadow-lg">
                 Accounting
             </a>
@@ -1082,12 +964,12 @@ padding-bottom: env(safe-area-inset-bottom, 20px);
     <WeekNavigation startDate={startDate} endDate={endDate} setStartDate={setStartDate} />
 </div>
 <nav
-  className="fixed bottom-0 left-0 w-full
+  className="fixed bottom-0 left-0 w-full h-[70px]
              bg-white/85 backdrop-blur-[20px]
              border-t border-black/5
              flex items-center justify-around
              z-10
-             pt-[14px] pb-[constant(safe-area-inset-bottom,20px)] pb-[env(safe-area-inset-bottom,20px)]
+             pb-[env(safe-area-inset-bottom)]
              font-['Inter',sans-serif]"
 >
   {/* Home */}
@@ -1107,7 +989,7 @@ padding-bottom: env(safe-area-inset-bottom, 20px);
 
   {/* Inventory (inactive) */}
   <a
-    href="inventory.html"
+    href="/inventory.html"
     className="flex flex-col items-center flex-1
                text-slate-500 no-underline"
   >
@@ -1182,7 +1064,11 @@ padding-bottom: env(safe-area-inset-bottom, 20px);
             Accounting Reports
         </h3>
 
-<h3 className="text-xs font- text-gray-400  tracking-wider ml-1 mt-2 pd-10">2 Reports available</h3>                            {loading && (
+<h3 className="text-xs font- text-gray-400  tracking-wider ml-1 mt-2 pd-10">2 Reports available</h3>
+
+
+
+                            {loading && (
                                 <Card className="p-4 text-center text-blue-600 font-semibold mt-4">Generating Accounting Reports...</Card>
                             )}
                             {error && (
@@ -1221,6 +1107,33 @@ padding-bottom: env(safe-area-inset-bottom, 20px);
 
                                 </div>
                             )}
+
+{!loading && accountingData && (
+    <div className="mt-6 mb-4 animate-fade-in">
+        <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1 mb-2">
+            Verified Data Sources (Balanced Only)
+        </h4>
+        <div className="flex flex-wrap gap-2">
+            {accountingData.includedDates.length > 0 ? (
+                accountingData.includedDates.map(date => (
+                    <div key={date} className="flex flex-col items-center bg-white border border-gray-200 rounded-lg px-3 py-1.5 shadow-sm">
+                        <span className="text-[10px] text-gray-400 uppercase font-medium">
+                            {new Date(date).toLocaleDateString('en-US', {weekday: 'short'})}
+                        </span>
+                        <span className="text-xs font-bold text-blue-600">{date.split('-')[2]}</span>
+                    </div>
+                ))
+            ) : (
+                <div className="w-full p-4 bg-yellow-50 rounded-xl border border-yellow-200 text-center">
+                    <p className="text-xs text-yellow-700 font-semibold">
+                        No days have been marked as "Balanced" for this period.
+                    </p>
+                </div>
+            )}
+        </div>
+    </div>
+)}
+
 
                             {!loading && accountingData && (
                                 <div className="space-y-4 animate-fade-in">
