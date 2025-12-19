@@ -525,19 +525,19 @@ const MenuBar = () => {
     padding-top: 14px;
      padding-bottom: constant(safe-area-inset-bottom, 20px);
 padding-bottom: env(safe-area-inset-bottom, 20px); 
-    padding-bottom: 25px;
+    
     font-family: 'Inter', sans-serif;
 
 ">
     
-    <a href="/dashboard.html" style="display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #64748b; flex: 1; transition: 0.2s;">
+    <a href="dashboard.html" style="display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #64748b; flex: 1; transition: 0.2s;">
         <svg style="width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2;" viewBox="0 0 24 24">
             <rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect>
         </svg>
         <span style="font-size: 11px; margin-top: 4px; font-weight: 500;">Home</span>
     </a>
 
-    <a href="/inventory.html" style="display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #3f72af; flex: 1; position: relative;">
+    <a href="inventory.html" style="display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #3f72af; flex: 1; position: relative;">
         <div style="position: absolute; top: -14px; width: 20px; height: 3px; background: #3f72af; border-radius: 0 0 4px 4px;"></div>
         
         <svg style="width: 22px; height: 22px; fill: rgba(37, 99, 235, 0.1); stroke: currentColor; stroke-width: 2;" viewBox="0 0 24 24">
@@ -555,7 +555,7 @@ padding-bottom: env(safe-area-inset-bottom, 20px);
         <span style="font-size: 11px; margin-top: 4px; font-weight: 500;">Reports</span>
     </a>
 
-    <a href="/statistics.html" style="display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #64748b; flex: 1;">
+    <a href="statistics.html" style="display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #64748b; flex: 1;">
         <svg style="width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2;" viewBox="0 0 24 24">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
             <polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line>
@@ -563,7 +563,7 @@ padding-bottom: env(safe-area-inset-bottom, 20px);
         <span style="font-size: 11px; margin-top: 4px; font-weight: 500;">Stats</span>
     </a>
 
-    <a href="/settings.html" style="display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #64748b; flex: 1;">
+    <a href="settings.html" style="display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #64748b; flex: 1;">
         <svg style="width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2;" viewBox="0 0 24 24">
             <circle cx="12" cy="12" r="3"></circle>
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0-.33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0 .33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
@@ -1071,10 +1071,10 @@ padding-bottom: env(safe-area-inset-bottom, 20px);
             <a className="flex-1 text-center py-1.5 px-3 rounded-md text-xs font-bold transition-all whitespace-nowrap bg-[#3f72af] text-white shadow-lg">
                 Accounting
             </a>
-            <a href="/sales-report.html" className="flex-1 text-center py-1.5 px-3 rounded-md text-xs font-bold transition-all whitespace-nowrap text-gray-300 cursor-not-allowed hover:text-white">
+            <a href="sales-report.html" className="flex-1 text-center py-1.5 px-3 rounded-md text-xs font-bold transition-all whitespace-nowrap text-gray-300 cursor-not-allowed hover:text-white">
                 Sales
             </a>
-            <a href="/inventory-report.html" className="flex-1 text-center py-1.5 px-3 rounded-md text-xs font-bold transition-all whitespace-nowrap text-gray-300 cursor-not-allowed hover:text-white">
+            <a href="inventory-report.html" className="flex-1 text-center py-1.5 px-3 rounded-md text-xs font-bold transition-all whitespace-nowrap text-gray-300 cursor-not-allowed hover:text-white">
                 Inventory
             </a>
         </div>
@@ -1107,7 +1107,7 @@ padding-bottom: env(safe-area-inset-bottom, 20px);
 
   {/* Inventory (inactive) */}
   <a
-    href="/inventory.html"
+    href="inventory.html"
     className="flex flex-col items-center flex-1
                text-slate-500 no-underline"
   >
