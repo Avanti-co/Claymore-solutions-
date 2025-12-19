@@ -559,35 +559,28 @@ firebase.database()
                 };
             };
 
-            useEffect(() => {
+                        useEffect(() => {
                 const fetchData = async () => {
                     setIsLoading(true);
                     setError(null);
                     try {
                         const { accountKey, username, logoUrl, profileUrl } = await getLocalStorage();
 
-if (!accountKey || !username) {
-  throw new Error("Missing keys in local storage.");
-}
+                        if (!accountKey || !username) {
+                            throw new Error("Missing keys in local storage.");
+                        }
 
-// Fetch account name from Firebase
-firebase.database()
-  .ref(`accounts/${accountKey}/displayName`)
-  .once("value")
-  .then(snapshot => {
-    const accountName = snapshot.exists() && snapshot.val()
-      ? snapshot.val()
-      : "Account";
+                        // Fetch account name from Firebase
+                        firebase.database()
+                            .ref(`accounts/${accountKey}/displayName`)
+                            .once("value")
+                            .then(snapshot => {
+                                const accountName = snapshot.exists() && snapshot.val() ? snapshot.val() : "Account";
+                                setUserDetails({ accountName, username, logoUrl, profileUrl });
+                                const el = document.getElementById("accName");
+                                if (el) { el.textContent = accountName; }
+                            });
 
-    // Update state
-    setUserDetails({ accountName, username, logoUrl, profileUrl });
-
-    // Initialize UI directly
-    const el = document.getElementById("accName");
-    if (el) {
-      el.textContent = accountName;
-    }
-  });
                         const { statsPath, emptiesPath } = await getFirebaseRef(accountKey, username);
 
                         const [statsSnap, emptiesSnap] = await Promise.all([
@@ -597,7 +590,6 @@ firebase.database()
                         
                         const rawDatesData = statsSnap.val() || {};
                         const rawEmptiesData = emptiesSnap.val() || {};
-                        const allAvailableDateKeys = Object.keys(rawDatesData).sort();
 
                         const processedData = {
                             sales: {
@@ -610,50 +602,53 @@ firebase.database()
                             },
                             inventory: {},
                             productMetrics: new Map(),
+                            unbalancedDays: []
                         };
                         
+                        const unbalancedDays = [];
+
                         allDateKeys.forEach(dateKey => {
                             const dailyData = rawDatesData[dateKey] || {};
-                            const metrics = calculateSalesMetrics(dailyData);
-                            
                             const isCurrentWeek = currentWeekData.some(d => d.dateKey === dateKey);
                             
-                            if (isCurrentWeek) {
-                                processedData.sales.currentWeekMetrics.push({
-                                    label: currentWeekData.find(d => d.dateKey === dateKey).day,
-                                    dateKey: dateKey,
-                                    ...metrics,
-                                });
-                                processedData.sales.currentWeekTotalRevenue += metrics.totalSalesRevenue;
+                            if (dailyData.balanced === true) {
+                                const metrics = calculateSalesMetrics(dailyData);
                                 
-                                processedData.sales.weeklyExpenses.push(...metrics.expenses.map(e => ({...e, dateKey})));
-                                processedData.sales.weeklyIncomes.push(...metrics.incomes.map(i => ({...i, dateKey})));
-                                processedData.sales.weeklyOrders.push({
-                                    dateKey,
-                                    orders: metrics.orders,
-                                });
-                                
-                                metrics.dailyProductMetrics.forEach(item => {
-                                    if (processedData.productMetrics.has(item.id)) {
-                                        const existing = processedData.productMetrics.get(item.id);
-                                        existing.units_sold += item.units_sold;
-                                        existing.revenue += item.revenue;
-                                    } else {
-                                        processedData.productMetrics.set(item.id, {...item});
-                                    }
-                                });
-
-                            } else {
-                                processedData.sales.lastWeekTotalRevenue += metrics.totalSalesRevenue;
+                                if (isCurrentWeek) {
+                                    processedData.sales.currentWeekMetrics.push({
+                                        label: currentWeekData.find(d => d.dateKey === dateKey).day,
+                                        dateKey: dateKey,
+                                        ...metrics,
+                                    });
+                                    processedData.sales.currentWeekTotalRevenue += metrics.totalSalesRevenue;
+                                    processedData.sales.weeklyExpenses.push(...metrics.expenses.map(e => ({...e, dateKey})));
+                                    processedData.sales.weeklyIncomes.push(...metrics.incomes.map(i => ({...i, dateKey})));
+                                    processedData.sales.weeklyOrders.push({ dateKey, orders: metrics.orders });
+                                    
+                                    metrics.dailyProductMetrics.forEach(item => {
+                                        if (processedData.productMetrics.has(item.id)) {
+                                            const existing = processedData.productMetrics.get(item.id);
+                                            existing.units_sold += item.units_sold;
+                                            existing.revenue += item.revenue;
+                                        } else {
+                                            processedData.productMetrics.set(item.id, {...item});
+                                        }
+                                    });
+                                } else {
+                                    processedData.sales.lastWeekTotalRevenue += metrics.totalSalesRevenue;
+                                }
+                            } else if (isCurrentWeek) {
+                                const dayObj = currentWeekData.find(d => d.dateKey === dateKey);
+                                if (dayObj) unbalancedDays.push(dayObj.day);
                             }
                         });
                         
+                        processedData.unbalancedDays = unbalancedDays;
                         processedData.inventory = calculateInventoryMetrics(rawDatesData, rawEmptiesData);
-                        
                         processedData.productMetrics = Array.from(processedData.productMetrics.values());
 
                         setFullData(processedData);
-                        
+
                     } catch (err) {
                         console.error("Dashboard Data Fetching Error:", err);
                         setError("Failed to fetch dashboard data: " + err.message);
@@ -665,8 +660,9 @@ firebase.database()
                 fetchData();
             }, [allDateKeys, calculateSalesMetrics, calculateInventoryMetrics, currentWeekData]);
 
-            return { fullData, isLoading, error, currentWeekData, userDetails, lastWeekData };
+            return { fullData, isLoading, error, currentWeekData, userDetails };
         };
+
 
 
         // --- UI COMPONENTS ---
@@ -796,7 +792,7 @@ const handleLogout = async () => {
             const weekIdentifier = getWeekIdentifier(weekData[0].date);
             
             return (
-                <div><Card className="p-3 flex items-center justify-between shadow-sm bg-white border-none">
+                <div><Card className="p-3 flex items-center justify-between shadow-sm bg-white border-none mt-10">
                     <button 
                         onClick={() => onNavigate(-7)} 
                         className="text-gray-400 hover:text-gray-700 active:scale-95 transition-transform p-1"
@@ -903,12 +899,25 @@ const handleLogout = async () => {
             </Card>
         );
         
-        const WeakReportAlert = () => (
-            <div >
-                
+                const WeakReportAlert = ({ unbalancedDays }) => {
+            // If there's no data or no unbalanced days, show nothing
+            if (!unbalancedDays || unbalancedDays.length === 0) return null;
 
-            </div>
-        );
+            return (
+                <div className="bg-amber-50 border-l-4 border-amber-400 p-4 mb-4 rounded-r-lg shadow-sm">
+                    <div className="flex items-center">
+                        <Icons.AlertCircle className="text-amber-500 mr-3" size={20} />
+                        <div>
+                            <p className="text-sm text-amber-800 font-bold">Partial Weekly Report</p>
+                            <p className="text-xs text-amber-700">
+                                Data for <strong>{unbalancedDays.join(', ')}</strong> is hidden because those days are not yet balanced.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
         
         // REVISED DoughnutChart (to include comparison)
         const DoughnutChart = ({ data, labels, title, colors }) => {
@@ -1226,7 +1235,13 @@ const handleLogout = async () => {
             const barChartLabels = top5Products.map(p => p.name.split(' ')[0]); 
             
             // 3. Net Revenue (Line)
-            const netRevenueChartData = salesData?.currentWeekMetrics.map(d => d.netSaleRevenue) || [];
+            const netRevenueChartData = currentWeekData.map(day => {
+  const dayMetric = salesData?.currentWeekMetrics.find(
+    d => d.dateKey === day.dateKey
+  );
+
+  return dayMetric ? dayMetric.netSaleRevenue : 0;
+});
             const netRevenueChartLabels = currentWeekData.map(d => d.day);
             
             // 4. Carousels
@@ -1301,10 +1316,13 @@ const handleLogout = async () => {
                         <main className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
                             
                             {/* Weak Report Highlight */}
-                            <WeakReportAlert />
+                            
+
                             
                             {/* Week Navigator */}
                             <WeekNavigator weekData={currentWeekData} onNavigate={handleWeekNavigation} />
+
+<WeakReportAlert unbalancedDays={fullData?.unbalancedDays} />
 
                            {/* Reports Carousel */}
 <div
@@ -1361,6 +1379,7 @@ const handleLogout = async () => {
       />
     </div>
   </div>
+
 
   {/* Static swipe dots */}
   <div
