@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=0.9, viewport-fit=cover,maximum-scale=0.95, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.95, user-scalable=no, viewport-fit=cover">
     <title>Avanti Ledger | Sales</title>
 
 
@@ -68,11 +68,14 @@
         body {
             -webkit-tap-highlight-color: transparent;
             background-color: #f3f4f6;
+
+padding-bottom: constant(safe-area-inset-bottom, 20px);
+padding-bottom: env(safe-area-inset-bottom, 20px);
         }
     </style>
 </head>
 <body>
-    <div id="root"></div>
+    <div id="root" ></div>
 
     <script type="text/babel">
         const { useState, useEffect, useMemo, useCallback } = React;
@@ -274,37 +277,37 @@
             return { ref: database.ref(fullPath), sourcePath: fullPath };
         };
         
-        const fetchFirebaseData = async (accountKey, username, allDateKeys) => {
-            
+                const fetchFirebaseData = async (accountKey, username, allDateKeys) => {
             const { ref: basePathRef, sourcePath } = await getFirebaseRef(accountKey, username);
+            
+            // Get the base path for empties by swapping folder names
+            const emptiesPath = sourcePath.replace('avanti_stats', 'avanti_empties');
+            const emptiesRef = database.ref(emptiesPath);
 
             const fetchedData = {};
+            const fetchedEmpties = {};
             const itemPromises = [];
 
-            // Fetch data for all required date keys
             allDateKeys.forEach(dateKey => {
                  itemPromises.push(
-                    // Fetch all data under the date key
                     basePathRef.child(dateKey).once('value')
-                        .then(snapshot => {
-                            const data = snapshot.val();
-                            fetchedData[dateKey] = data || {};
-                        })
-                        .catch(err => {
-                            console.warn(`Failed to fetch data for ${dateKey}:`, err);
-                            fetchedData[dateKey] = {};
-                        })
+                        .then(snapshot => { fetchedData[dateKey] = snapshot.val() || {}; })
+                        .catch(err => { fetchedData[dateKey] = {}; })
+                );
+                itemPromises.push(
+                    emptiesRef.child(dateKey).once('value')
+                        .then(snapshot => { fetchedEmpties[dateKey] = snapshot.val() || {}; })
+                        .catch(err => { fetchedEmpties[dateKey] = {}; })
                 );
             });
             
             await Promise.all(itemPromises);
-
-            return { data: fetchedData, source: sourcePath };
+            return { data: fetchedData, empties: fetchedEmpties, source: sourcePath };
         };
-        
+
         // --- DATA PROCESSING HOOK ---
 
-        const useFirebaseData = (weekStartDate) => {
+                const useFirebaseData = (weekStartDate) => {
             const [data, setData] = useState(null);
             const [isLoading, setIsLoading] = useState(true);
             const [error, setError] = useState(null);
@@ -322,67 +325,76 @@
                 [...currentWeekData.map(d => d.dateKey), ...lastWeekData.map(d => d.dateKey)]
             , [currentWeekData, lastWeekData]);
 
-            // Core logic: Calculate sales, revenue, expenses, and incomes
+            // INVENTORY CALCULATION LOGIC
+                        const calculateInventoryMetrics = useCallback((rawDatesData, rawEmptiesData) => {
+                const summary = { totalStockValue: 0, totalEmptiesValue: 0 };
+                
+                // Find the latest date in the current week that has balanced === true
+                const balancedDates = currentWeekData
+                    .filter(d => rawDatesData[d.dateKey]?.balanced === true)
+                    .map(d => d.dateKey);
+
+                if (balancedDates.length === 0) return summary;
+
+                const latestBalancedKey = balancedDates[balancedDates.length - 1];
+                const latestStats = rawDatesData[latestBalancedKey]?.items || {};
+                const latestEmpties = rawEmptiesData[latestBalancedKey]?.items || {};
+
+                Object.values(latestStats).forEach(item => {
+                    const closing = parseFloat(item.closing || 0);
+                    const cost = parseFloat(item.cost || 0);
+                    summary.totalStockValue += (closing * cost);
+                });
+
+                Object.values(latestEmpties).forEach(item => {
+                    const qty = parseFloat(item.closing || 0);
+                    const price = parseFloat(item.price || 0);
+                    summary.totalEmptiesValue += (qty * price);
+                });
+
+                return summary;
+            }, [currentWeekData]);
+
             const calculateSalesMetrics = useCallback((dailyData) => {
-                let totalSales = 0; // Revenue from goods sold
+                let totalSales = 0;
                 let totalWorkingExpenses = 0;
-                let totalIncome = 0; // Other incomes
+                let totalIncome = 0;
                 let dailyProductMetrics = {}; 
 
-                // 1. Calculate Sales and Cost (COGS removed as per request)
                 const items = dailyData.items || {};
-                
                 Object.values(items).forEach(item => {
                     const salesUnits = (item.opening || 0) + (item.orders || 0) - (item.closing || 0);
-                    
                     if (salesUnits > 0) {
                         const revenue = salesUnits * (item.price || 0); 
-                        // Cost is set to 0 as Cost of Goods Sold (COGS) is removed from all reports.
-                        const cost = 0; 
-
                         totalSales += revenue;
-
                         dailyProductMetrics[item.id] = {
                             id: item.id,
                             name: item.name,
                             units_sold: salesUnits,
                             revenue: revenue,
-                            cost: cost, // Now 0
+                            cost: 0, 
                         };
                     }
                 });
                 
-                // 2. Calculate Working Expenses (from 'expenses' data)
                 const expenses = dailyData.expenses || {};
-                Object.values(expenses).forEach(expense => {
-                    // Assuming the amount is directly under the expense object
-                    totalWorkingExpenses += parseFloat(expense.amount || 0);
-                });
+                Object.values(expenses).forEach(exp => { totalWorkingExpenses += parseFloat(exp.amount || 0); });
                 
-                // 3. Calculate Other Incomes (from 'incomes' data)
                 const incomes = dailyData.incomes || {};
-                 Object.values(incomes).forEach(income => {
-                    // Assuming the amount is directly under the income object
-                    totalIncome += parseFloat(income.amount || 0);
-                });
-                
-                const totalSalesRevenue = totalSales + totalIncome;
-                const netSaleRevenue = totalSalesRevenue - totalWorkingExpenses;
+                Object.values(incomes).forEach(inc => { totalIncome += parseFloat(inc.amount || 0); });
                 
                 return { 
-                    totalSales, 
-                    totalWorkingExpenses, 
-                    totalIncome, 
-                    totalSalesRevenue,
-                    netSaleRevenue,
-                    expenses: Object.values(expenses), // Pass detailed expenses for carousel
+                    totalSales, totalWorkingExpenses, totalIncome, 
+                    totalSalesRevenue: totalSales + totalIncome,
+                    netSaleRevenue: (totalSales + totalIncome) - totalWorkingExpenses,
+                    expenses: Object.values(expenses), 
                     dailyProductMetrics: Object.values(dailyProductMetrics) 
                 };
             }, []);
 
             useEffect(() => {
                 if (!database) {
-                    setError("Firebase SDK is missing or initialization failed. Cannot connect to database.");
+                    setError("Firebase missing");
                     setIsLoading(false);
                     return;
                 }
@@ -391,98 +403,85 @@
                     setIsLoading(true);
                     setError(null);
                     try {
-                        // 1. Get user keys from local storage
                         const { accountKey, username } = await getLocalStorage();
-                        if (!accountKey || !username) {
-                            throw new Error("Missing AV_ledger_account_key or AV_ledger_username in local storage.");
-                        }
-
-                        // 2. Fetch all required date data from firebase
-                        const { data: rawData, source } = await fetchFirebaseData(accountKey, username, allDateKeys);
+                        // Call the updated fetcher that gets empties too
+                        const { data: rawData, empties: rawEmpties, source } = await fetchFirebaseData(accountKey, username, allDateKeys);
                         setSourcePath(source);
 
                         const processedData = {
                             currentWeek: [],
                             lastWeek: [],
-                            productMetrics: new Map(), // Use Map to aggregate product metrics across all days
+                            productMetrics: new Map(),
                             currentWeekTotalSalesRevenue: 0,
                             lastWeekTotalSalesRevenue: 0,
+                            inventory: calculateInventoryMetrics(rawData, rawEmpties) // ADDED INVENTORY
                         };
                         
-                        // Function to aggregate product metrics
-                        const aggregateMetrics = (newMetrics) => {
-                            newMetrics.forEach(item => {
-                                if (processedData.productMetrics.has(item.id)) {
-                                    const existing = processedData.productMetrics.get(item.id);
-                                    existing.units_sold += item.units_sold;
-                                    existing.revenue += item.revenue;
-                                    // existing.cost += item.cost; // COGS removed, no need to aggregate
-                                } else {
-                                    processedData.productMetrics.set(item.id, {...item});
-                                }
-                            });
-                        };
-                        
-                        // Process current week
+                                                // Process current week (Balanced Only)
                         currentWeekData.forEach(day => {
                             const dailyData = rawData[day.dateKey] || {};
-                            const { 
-                                totalSales, 
-                                totalWorkingExpenses, 
-                                totalIncome,
-                                totalSalesRevenue,
-                                netSaleRevenue,
-                                expenses,
-                                dailyProductMetrics 
-                            } = calculateSalesMetrics(dailyData);
                             
-                            processedData.currentWeekTotalSalesRevenue += totalSalesRevenue;
-                            processedData.currentWeek.push({
-                                label: day.day,
-                                value: totalSales, // Daily Sales (revenue from goods)
-                                totalIncome: totalIncome, // Other Income
-                                workingExpenses: totalWorkingExpenses, // Working Expenses
-                                totalSalesRevenue: totalSalesRevenue, // Total Sales + Incomes
-                                netSaleRevenue: netSaleRevenue, // Total Sales Revenue - Working Expenses
-                                expenses: expenses, // Daily expense details
-                                dateKey: day.dateKey,
-                            });
-                            
-                            aggregateMetrics(dailyProductMetrics);
+                            // ONLY process if balanced is true
+                            if (dailyData.balanced === true) {
+                                const metrics = calculateSalesMetrics(dailyData);
+                                
+                                processedData.currentWeekTotalSalesRevenue += metrics.totalSalesRevenue;
+                                processedData.currentWeek.push({
+                                    label: day.day,
+                                    ...metrics,
+                                    dateKey: day.dateKey,
+                                });
+                                
+                                // Aggregate product metrics for best sellers
+                                metrics.dailyProductMetrics.forEach(item => {
+                                    if (processedData.productMetrics.has(item.id)) {
+                                        const existing = processedData.productMetrics.get(item.id);
+                                        existing.units_sold += item.units_sold;
+                                        existing.revenue += item.revenue;
+                                    } else {
+                                        processedData.productMetrics.set(item.id, {...item});
+                                    }
+                                });
+                            } else {
+                                // Optional: Push empty data so the chart still shows the day label
+                                processedData.currentWeek.push({
+                                    label: day.day,
+                                    value: 0,
+                                    totalIncome: 0,
+                                    workingExpenses: 0,
+                                    totalSalesRevenue: 0,
+                                    netSaleRevenue: 0,
+                                    expenses: [],
+                                    dateKey: day.dateKey,
+                                    unbalanced: true // Flag to show it's not balanced
+                                });
+                            }
                         });
                         
-                        // Process last week
+                        // Process last week (Balanced Only)
                         lastWeekData.forEach(day => {
                             const dailyData = rawData[day.dateKey] || {};
-                            const { totalSalesRevenue } = calculateSalesMetrics(dailyData);
-                            processedData.lastWeekTotalSalesRevenue += totalSalesRevenue;
-                            // Note: We only calculate product metrics for the *current* displayed week
+                            if (dailyData.balanced === true) {
+                                const { totalSalesRevenue } = calculateSalesMetrics(dailyData);
+                                processedData.lastWeekTotalSalesRevenue += totalSalesRevenue;
+                            }
                         });
 
-                        processedData.productMetrics = Array.from(processedData.productMetrics.values());
 
+                        processedData.productMetrics = Array.from(processedData.productMetrics.values());
                         setData(processedData);
-                        
                     } catch (err) {
-                        console.error("Data fetching error:", err);
-                        setError("Failed to fetch data: " + err.message);
+                        setError(err.message);
                     } finally {
                         setIsLoading(false);
                     }
                 };
-
                 fetchData();
-            }, [allDateKeys, calculateSalesMetrics, currentWeekData, lastWeekData]);
+            }, [allDateKeys, calculateSalesMetrics, calculateInventoryMetrics, currentWeekData, lastWeekData]);
 
-            return { 
-                data, 
-                isLoading, 
-                error, 
-                sourcePath, 
-                currentWeek: currentWeekData, 
-                lastWeek: lastWeekData 
-            };
+            return { data, isLoading, error, sourcePath, currentWeek: currentWeekData, lastWeek: lastWeekData };
         };
+
 
         // --- UI BLOCKS ---
         
@@ -973,8 +972,15 @@ const BarChartSimple = ({ data, monetary = false }) => {
             const productMetrics = data.productMetrics;
 
             // P&L Metrics Calculation (Total Sales Revenue, Expenses, Net Sale Revenue)
-            const totalSales = salesData.reduce((s, d) => s + d.value, 0); // Revenue from goods sold
-            const totalWorkingExpenses = salesData.reduce((s, d) => s + d.workingExpenses, 0);
+            const totalSales = salesData.reduce(
+  (sum, day) => sum + (Number(day.totalSales) || 0),
+  0
+);
+
+const totalWorkingExpenses = salesData.reduce(
+  (sum, day) => sum + (Number(day.totalWorkingExpenses) || 0),
+  0
+);
             const totalIncomes = salesData.reduce((s, d) => s + d.totalIncome, 0);
             const weeklyTotalSalesRevenue = salesData.reduce((s, d) => s + d.totalSalesRevenue, 0); // Sales + Incomes
             const weeklyNetSaleRevenue = salesData.reduce((s, d) => s + d.netSaleRevenue, 0); // Total Sales Revenue - Expenses
@@ -1034,7 +1040,7 @@ const BarChartSimple = ({ data, monetary = false }) => {
                                         <div className="flex flex-col items-end">
                                             <span className="text-sm font-bold">{formatCurrency(day.totalSalesRevenue)}</span> 
                                             <span className="text-[10px] text-gray-400">
-                                                - {formatCurrency(day.workingExpenses)} Expenses
+                                                - {formatCurrency(day.totalWorkingExpenses || 0)} Expenses
                                             </span>
                                         </div>
                                     </div>
@@ -1103,7 +1109,7 @@ const BarChartSimple = ({ data, monetary = false }) => {
                             <div className="p-4 space-y-3">
                                 <div className="flex justify-between items-center text-sm">
                                     <p className="font-medium text-gray-700">Total Sales (Goods Revenue)</p>
-                                    <span className="font-bold text-gray-900">{formatCurrency(totalSales)}</span>
+                                    <span>{formatCurrency(Number(totalSales) || 0)}</span>
                                 </div>
                                 <div className="flex justify-between items-center text-sm">
                                     <p className="font-medium text-gray-700">Total Other Incomes</p>
@@ -1121,7 +1127,7 @@ const BarChartSimple = ({ data, monetary = false }) => {
                                 
                                 <div className="flex justify-between items-center text-sm">
                                     <p className="font-medium text-gray-700">Total Working Expenses </p>
-                                    <span className="font-bold text-grey-500">({formatCurrency(totalWorkingExpenses)})</span>
+                                    <span>({formatCurrency(Number(totalWorkingExpenses) || 0)})</span>
                                 </div>
                                 
                                 <hr className="border-t border-gray-200" />
@@ -1146,7 +1152,7 @@ const BarChartSimple = ({ data, monetary = false }) => {
                                         <p className="text-right font-medium text-gray-800">{formatCurrency(day.totalSalesRevenue)}</p>
                                         
                                         <p className="text-gray-500">less: Working Expenses</p>
-                                        <p className="text-right font-medium text-red-600">({formatCurrency(day.workingExpenses)})</p>
+                                        <p className="text-right font-medium text-red-600">- {formatCurrency(day.totalWorkingExpenses || 0)})</p>
                                         
                                         <p className="font-bold text-gray-700">= Sales Revenue</p>
                                         <p className="text-right font-black text-blue-600">{formatCurrency(day.netSaleRevenue)}</p>
@@ -1311,12 +1317,12 @@ const BarChartSimple = ({ data, monetary = false }) => {
     <WeekNavigator weekData={currentWeek} onNavigate={handleWeekNavigation}  />
 </div>
 <nav
-  className="fixed bottom-0 left-0 w-full 
+  className="fixed bottom-0 left-0 w-full h-[70px]
              bg-white/85 backdrop-blur-[20px]
              border-t border-black/5
              flex items-center justify-around
              z-10
-          pt-[14px] pb-[constant(safe-area-inset-bottom,20px)] pb-[env(safe-area-inset-bottom,20px)]
+             pb-[env(safe-area-inset-bottom)]
              font-['Inter',sans-serif]"
 >
   {/* Home */}
