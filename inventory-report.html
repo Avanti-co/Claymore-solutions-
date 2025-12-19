@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=0.9, viewport-fit=cover, maximum-scale=0.9, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9, viewport-fit=cover, user-scalable=no">
     <title>Avanti Ledger | Inventory</title>
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="manifest" href="manifest.json">
@@ -460,6 +460,10 @@
                             }
                         });
                     }
+const today = new Date();
+const yesterday = new Date(today);
+yesterday.setDate(today.getDate() - 1);
+const yesterdayStr = yesterday.toISOString().split('T')[0];
 
                     // 5. Fetch, Calculate, & Clean Empty Bottles
                     const emptiesSnap = await db.ref(emptiesPath).once('value');
@@ -491,21 +495,18 @@
                         let emptiesCount = initialCount;
                         
                         datesKeys.forEach(dateKey => {
-                            if (dateKey >= startDateKey) {
-                                const dayData = datesData[dateKey].items && datesData[dateKey].items[itemId];
-                                if (dayData) {
-                                    const opening = dayData.opening || 0;
-                                    const orders = dayData.orders || 0;
-                                    const closing = dayData.closing || 0;
-                                    
-                                    // Sales = opening + orders - closing
-                                    const sales = opening + orders - closing;
-                                    
-                                    // Empties formula: initialCount + Σ(sales - orders)
-                                    emptiesCount += (sales - orders);
-                                }
-                            }
-                        });
+    if (dateKey >= startDateKey && dateKey <= yesterdayStr) {
+        const dayData = datesData[dateKey].items && datesData[dateKey].items[itemId];
+        if (dayData) {
+            const opening = dayData.opening || 0;
+            const orders = dayData.orders || 0;
+            const closing = dayData.closing || 0;
+
+            const sales = opening + orders - closing;
+            emptiesCount += (sales - orders);
+        }
+    }
+});
                         
                         const units = Math.max(0, emptiesCount);
                         totalEmptiesUnits += units;
