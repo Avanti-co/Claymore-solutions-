@@ -964,12 +964,12 @@ padding-bottom: env(safe-area-inset-bottom, 20px);
     <WeekNavigation startDate={startDate} endDate={endDate} setStartDate={setStartDate} />
 </div>
 <nav
-  className="fixed bottom-0 left-0 w-full h-[70px]
+  className="fixed bottom-0 left-0 w-full 
              bg-white/85 backdrop-blur-[20px]
              border-t border-black/5
              flex items-center justify-around
              z-10
-             pb-[env(safe-area-inset-bottom)]
+             pt-[14px] pb-[constant(safe-area-inset-bottom,20px)] pb-[env(safe-area-inset-bottom,20px)]
              font-['Inter',sans-serif]"
 >
   {/* Home */}
