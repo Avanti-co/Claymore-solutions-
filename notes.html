@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Avanti | Notification Engine</title>
+    <title>Avanti | Claymore Push Engine</title>
     <link rel="stylesheet" href="https://fonts.cdnfonts.com/css/sf-pro-display">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
-            font-family: 'SF Pro Display', sans-serif;
-            background: #f2f2f7;
+            font-family: 'SF Pro Display', -apple-system, sans-serif;
+            background-color: #f2f2f7;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -20,122 +20,108 @@
             background: rgba(255, 255, 255, 0.8);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            border-radius: 28px;
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-            width: 100%;
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+            width: 90%;
             max-width: 400px;
             padding: 2.5rem;
         }
-        .avanti-btn {
+        .btn-avanti {
             background-color: #3f72af;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.3s ease;
         }
-        .avanti-btn:active { transform: scale(0.97); }
+        .btn-avanti:active { transform: scale(0.95); }
+        .btn-disabled { background-color: #a0aec0; cursor: not-allowed; }
+        
+        /* Pulse animation for the permission state */
+        .pulse { animation: pulse-blue 2s infinite; }
+        @keyframes pulse-blue {
+            0% { box-shadow: 0 0 0 0 rgba(63, 114, 175, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(63, 114, 175, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(63, 114, 175, 0); }
+        }
     </style>
 </head>
 <body>
 
     <div class="glass-card text-center">
-        <div class="w-16 h-16 bg-[#3f72af] rounded-2xl mx-auto mb-6 flex items-center justify-center shadow-lg shadow-blue-200">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
+        <div class="mb-6">
+            <div id="icon-bg" class="w-16 h-16 bg-[#3f72af] rounded-2xl mx-auto flex items-center justify-center shadow-lg transition-colors duration-500">
+                <svg id="bell-icon" xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+            </div>
         </div>
 
-        <h1 class="text-2xl font-bold text-gray-900 mb-2">Push Engine</h1>
-        <p class="text-sm text-gray-400 mb-8 uppercase tracking-widest font-medium">Real-Time Dispatch System</p>
+        <h1 class="text-2xl font-bold text-gray-900 mb-1">Push Engine</h1>
+        <p id="status-text" class="text-[10px] text-orange-500 font-bold uppercase tracking-widest mb-8">Activation Required</p>
 
-        <div class="text-left space-y-4">
-            <div>
-                <label class="text-xs font-bold text-gray-400 ml-1">CONTENT</label>
-                <input type="text" id="pushInput" placeholder="Enter message..." 
-                    class="w-full mt-1 px-4 py-4 rounded-xl bg-gray-100 border-none focus:ring-2 focus:ring-[#3f72af] outline-none text-gray-800">
-            </div>
+        <div class="space-y-4">
+            <input type="text" id="push-message" placeholder="Enter notification text..." 
+                class="w-full px-5 py-4 rounded-2xl bg-gray-100 border-none focus:ring-2 focus:ring-[#3f72af] outline-none text-gray-800 transition-all">
             
-            <button onclick="dispatchNotification()" class="avanti-btn w-full py-4 rounded-xl text-white font-bold shadow-lg shadow-blue-100">
-                Trigger Notification
+            <button onclick="handleEngine()" id="main-btn" class="btn-avanti w-full py-4 rounded-2xl text-white font-bold shadow-lg pulse">
+                Enable & Send
             </button>
         </div>
 
-        <div id="statusBox" class="mt-6 text-xs font-medium py-2 px-4 rounded-full inline-block">
-            Checking Permissions...
-        </div>
+        <p class="mt-6 text-[10px] text-gray-400 font-medium">CLAYMORE SOLUTIONS | AVANTI OS</p>
     </div>
 
     <script>
-        const statusBox = document.getElementById('statusBox');
+        const btn = document.getElementById('main-btn');
+        const statusText = document.getElementById('status-text');
+        const input = document.getElementById('push-message');
+        const iconBg = document.getElementById('icon-bg');
 
-        // 1. REGISTER THE SERVICE WORKER (Modern Standard)
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                const blob = new Blob([`
-                    self.addEventListener('push', (event) => {
-                        const data = event.data.json();
-                        self.registration.showNotification(data.title, {
-                            body: data.body,
-                            icon: 'https://cdn-icons-png.flaticon.com/512/1042/1042339.png'
-                        });
-                    });
-                `], { type: 'application/javascript' });
-                
-                const workerUrl = URL.createObjectURL(blob);
-                navigator.serviceWorker.register(workerUrl).then(() => {
-                    updateStatus("System Ready", "#34c759", "#e8f9ee");
-                });
-            });
+        // Initial UI State check
+        if (Notification.permission === "granted") {
+            setReadyUI();
         }
 
-        // 2. REQUEST PERMISSION
-        async function requestPermission() {
-            const permission = await Notification.requestPermission();
-            if (permission === 'granted') {
-                updateStatus("Permission Granted", "#34c759", "#e8f9ee");
-            } else {
-                updateStatus("Permission Denied", "#ff3b30", "#fde8e8");
-            }
-        }
+        async function handleEngine() {
+            const text = input.value.trim();
 
-        // 3. THE DISPATCH ENGINE
-        async function dispatchNotification() {
-            const msg = document.getElementById('pushInput').value;
-            
-            if (!msg) {
-                alert("Please write something first.");
+            // 1. If permission isn't granted yet, we must ask first
+            if (Notification.permission !== "granted") {
+                const permission = await Notification.requestPermission();
+                if (permission === "granted") {
+                    setReadyUI();
+                    if (text) sendPush(text);
+                } else {
+                    statusText.innerText = "Permission Denied";
+                    statusText.classList.replace('text-orange-500', 'text-red-500');
+                }
                 return;
             }
 
-            if (Notification.permission !== 'granted') {
-                await requestPermission();
-            }
-
-            if (Notification.permission === 'granted') {
-                // Triggering a 'Real' Local Push via Service Worker registration
-                const registration = await navigator.serviceWorker.ready;
-                registration.showNotification("Avanti Intelligence", {
-                    body: msg,
-                    icon: "https://via.placeholder.com/128/3f72af/ffffff?text=A",
-                    badge: "https://via.placeholder.com/128/3f72af/ffffff?text=A",
-                    vibrate: [200, 100, 200],
-                    tag: 'avanti-engine'
-                });
-                
-                document.getElementById('pushInput').value = "";
+            // 2. If already granted, just send the message
+            if (text) {
+                sendPush(text);
+            } else {
+                alert("Please type a message to dispatch.");
             }
         }
 
-        function updateStatus(text, color, bg) {
-            statusBox.innerText = text;
-            statusBox.style.color = color;
-            statusBox.style.backgroundColor = bg;
+        function sendPush(msg) {
+            new Notification("Avanti Intelligence", {
+                body: msg,
+                icon: "https://via.placeholder.com/128/3f72af/ffffff?text=A",
+                badge: "https://via.placeholder.com/128/3f72af/ffffff?text=A",
+                silent: false
+            });
+            input.value = ""; // Reset
         }
 
-        // Initial check
-        if (Notification.permission === 'granted') {
-            updateStatus("System Ready", "#34c759", "#e8f9ee");
-        } else {
-            updateStatus("Action Required: Grant Permission", "#ff9500", "#fff4e5");
+        function setReadyUI() {
+            statusText.innerText = "Engine Online";
+            statusText.classList.replace('text-orange-500', 'text-green-500');
+            btn.innerText = "Dispatch Notification";
+            btn.classList.remove('pulse');
+            iconBg.classList.replace('bg-[#3f72af]', 'bg-green-500');
         }
     </script>
 </body>
 </html>
+hi
