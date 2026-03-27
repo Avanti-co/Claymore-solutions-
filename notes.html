@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Avanti | Claymore Push OS</title>
+    <title>Avanti | Secure Cloud Engine</title>
     <link rel="stylesheet" href="https://fonts.cdnfonts.com/css/sf-pro-display">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
-            font-family: 'SF Pro Display', sans-serif;
-            background: #f2f2f7; /* iOS Gray */
+            font-family: 'SF Pro Display', -apple-system, sans-serif;
+            background: #f2f2f7;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -20,105 +20,103 @@
             background: rgba(255, 255, 255, 0.8);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            border-radius: 30px;
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            box-shadow: 0 20px 50px rgba(0,0,0,0.08);
+            border-radius: 32px;
+            border: 1px solid white;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.06);
             width: 90%;
             max-width: 400px;
-            padding: 2.5rem;
+            padding: 3rem;
+            text-align: center;
         }
-        .btn-avanti {
+        .avanti-btn {
             background-color: #3f72af;
-            color: white;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.2s ease;
         }
-        .btn-avanti:active { transform: scale(0.96); }
-        .status-dot { width: 8px; height: 8px; border-radius: 50%; }
+        .avanti-btn:active { transform: scale(0.97); }
+        .token-area {
+            background: rgba(0,0,0,0.03);
+            font-family: monospace;
+            word-break: break-all;
+        }
     </style>
 </head>
 <body>
 
     <div class="glass-card">
-        <div class="flex items-center justify-between mb-8">
-            <div class="flex items-center space-x-2">
-                <div id="status-dot" class="status-dot bg-orange-500"></div>
-                <span id="status-text" class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Engine Offline</span>
-            </div>
-            <div class="w-10 h-10 bg-[#3f72af] rounded-xl flex items-center justify-center shadow-md">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-            </div>
+        <div class="w-16 h-16 bg-[#3f72af] rounded-2xl mx-auto mb-6 flex items-center justify-center shadow-lg">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+            </svg>
         </div>
 
-        <h1 class="text-2xl font-bold text-gray-900 mb-6">Push Dispatcher</h1>
+        <h1 class="text-2xl font-bold text-gray-900 mb-1">Avanti Cloud</h1>
+        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em] mb-8">Secure Dispatch System</p>
 
         <div class="space-y-4">
-            <div class="relative">
-                <label class="text-[11px] font-bold text-gray-400 uppercase absolute -top-2 left-4 bg-[#fbfbfd] px-1">Message Content</label>
-                <input type="text" id="pushInput" placeholder="Enter notification text..." 
-                    class="w-full pt-5 pb-4 px-5 rounded-2xl bg-transparent border-2 border-gray-200 focus:border-[#3f72af] outline-none text-gray-800 transition-all">
-            </div>
-
-            <button onclick="runEngine()" id="mainBtn" class="btn-avanti w-full py-4 rounded-2xl font-bold text-lg shadow-xl shadow-blue-100">
-                Activate Engine
+            <input type="text" id="notif-input" placeholder="Message content..." 
+                class="w-full px-5 py-4 rounded-2xl bg-gray-100 border-none outline-none focus:ring-2 focus:ring-[#3f72af] text-gray-800">
+            
+            <button id="send-btn" class="avanti-btn w-full py-4 rounded-2xl text-white font-bold shadow-lg">
+                Dispatch Notification
             </button>
         </div>
 
-        <p class="mt-8 text-center text-[10px] text-gray-300 font-medium tracking-widest">CLAYMORE SOLUTIONS | SECURE API</p>
+        <div id="status" class="mt-8 text-[11px] font-black text-gray-400 uppercase tracking-widest">
+            Ready to Connect
+        </div>
+
+        <div id="token-display" class="hidden mt-6 p-3 rounded-xl token-area text-[9px] text-gray-500">
+            Fetching Device Token...
+        </div>
     </div>
 
-    <script>
-        const btn = document.getElementById('mainBtn');
-        const statusText = document.getElementById('status-text');
-        const statusDot = document.getElementById('status-dot');
-        const input = document.getElementById('pushInput');
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js";
 
-        // Check permission state on load
-        if (Notification.permission === "granted") {
-            setReady();
-        }
+        const firebaseConfig = {
+            apiKey: "AIzaSyAw7L6TJtF1W0PwfStEJUC4CebUyMdQU9w",
+            authDomain: "users-66be4.firebaseapp.com",
+            projectId: "users-66be4",
+            storageBucket: "users-66be4.firebasestorage.app",
+            messagingSenderId: "776585122050",
+            appId: "1:776585122050:web:3f452a1f16dc36ee1ef21b"
+        };
 
-        async function runEngine() {
-            const message = input.value.trim();
+        const app = initializeApp(firebaseConfig);
+        const messaging = getMessaging(app);
 
-            // STEP 1: If we don't have permission, we must ask.
-            if (Notification.permission !== "granted") {
-                const permission = await Notification.requestPermission();
-                if (permission === "granted") {
-                    setReady();
-                    if (message) sendAlert(message);
-                } else {
-                    statusText.innerText = "Permission Denied";
-                    statusDot.className = "status-dot bg-red-500";
+        const btn = document.getElementById('send-btn');
+        const status = document.getElementById('status');
+        const tokenArea = document.getElementById('token-display');
+
+        btn.addEventListener('click', async () => {
+            const msg = document.getElementById('notif-input').value;
+            if (!msg) return;
+
+            const permission = await Notification.requestPermission();
+            if (permission === 'granted') {
+                // 1. Send local visual feedback
+                new Notification("Avanti Intelligence", { body: msg });
+
+                // 2. Fetch the actual Cloud Token (This is what you use to send remotely)
+                try {
+                    const currentToken = await getToken(messaging, { 
+                        vapidKey: 'PASTE_YOUR_PUBLIC_VAPID_KEY_HERE' 
+                    });
+                    
+                    if (currentToken) {
+                        tokenArea.classList.remove('hidden');
+                        tokenArea.innerText = "Device Token: " + currentToken;
+                        status.innerText = "CLOUD TOKEN SYNCED";
+                        status.style.color = "#34c759";
+                    }
+                } catch (err) {
+                    console.log('Token error:', err);
+                    status.innerText = "LOCAL DISPATCH ONLY";
                 }
-                return;
             }
-
-            // STEP 2: If we have permission, send the message
-            if (message) {
-                sendAlert(message);
-            } else {
-                alert("Please enter a message to push.");
-            }
-        }
-
-        function sendAlert(text) {
-            new Notification("Claymore Alert", {
-                body: text,
-                icon: "https://via.placeholder.com/128/3f72af/ffffff?text=A",
-                badge: "https://via.placeholder.com/128/3f72af/ffffff?text=A",
-                tag: 'avanti-push'
-            });
-            input.value = ""; // Clear input
-        }
-
-        function setReady() {
-            statusText.innerText = "Engine Online";
-            statusDot.className = "status-dot bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]";
-            btn.innerText = "Dispatch Push";
-        }
+        });
     </script>
 </body>
 </html>
-hello
