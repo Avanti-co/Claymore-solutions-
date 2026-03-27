@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Avanti | Claymore Push Engine</title>
+    <title>Avanti | Claymore Push OS</title>
     <link rel="stylesheet" href="https://fonts.cdnfonts.com/css/sf-pro-display">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
-            font-family: 'SF Pro Display', -apple-system, sans-serif;
-            background-color: #f2f2f7;
+            font-family: 'SF Pro Display', sans-serif;
+            background: #f2f2f7; /* iOS Gray */
             display: flex;
             align-items: center;
             justify-content: center;
@@ -22,106 +22,103 @@
             -webkit-backdrop-filter: blur(20px);
             border-radius: 30px;
             border: 1px solid rgba(255, 255, 255, 0.5);
-            box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.08);
             width: 90%;
             max-width: 400px;
             padding: 2.5rem;
         }
         .btn-avanti {
             background-color: #3f72af;
-            transition: all 0.3s ease;
+            color: white;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .btn-avanti:active { transform: scale(0.95); }
-        .btn-disabled { background-color: #a0aec0; cursor: not-allowed; }
-        
-        /* Pulse animation for the permission state */
-        .pulse { animation: pulse-blue 2s infinite; }
-        @keyframes pulse-blue {
-            0% { box-shadow: 0 0 0 0 rgba(63, 114, 175, 0.4); }
-            70% { box-shadow: 0 0 0 10px rgba(63, 114, 175, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(63, 114, 175, 0); }
-        }
+        .btn-avanti:active { transform: scale(0.96); }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; }
     </style>
 </head>
 <body>
 
-    <div class="glass-card text-center">
-        <div class="mb-6">
-            <div id="icon-bg" class="w-16 h-16 bg-[#3f72af] rounded-2xl mx-auto flex items-center justify-center shadow-lg transition-colors duration-500">
-                <svg id="bell-icon" xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+    <div class="glass-card">
+        <div class="flex items-center justify-between mb-8">
+            <div class="flex items-center space-x-2">
+                <div id="status-dot" class="status-dot bg-orange-500"></div>
+                <span id="status-text" class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Engine Offline</span>
+            </div>
+            <div class="w-10 h-10 bg-[#3f72af] rounded-xl flex items-center justify-center shadow-md">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
             </div>
         </div>
 
-        <h1 class="text-2xl font-bold text-gray-900 mb-1">Push Engine</h1>
-        <p id="status-text" class="text-[10px] text-orange-500 font-bold uppercase tracking-widest mb-8">Activation Required</p>
+        <h1 class="text-2xl font-bold text-gray-900 mb-6">Push Dispatcher</h1>
 
         <div class="space-y-4">
-            <input type="text" id="push-message" placeholder="Enter notification text..." 
-                class="w-full px-5 py-4 rounded-2xl bg-gray-100 border-none focus:ring-2 focus:ring-[#3f72af] outline-none text-gray-800 transition-all">
-            
-            <button onclick="handleEngine()" id="main-btn" class="btn-avanti w-full py-4 rounded-2xl text-white font-bold shadow-lg pulse">
-                Enable & Send
+            <div class="relative">
+                <label class="text-[11px] font-bold text-gray-400 uppercase absolute -top-2 left-4 bg-[#fbfbfd] px-1">Message Content</label>
+                <input type="text" id="pushInput" placeholder="Enter notification text..." 
+                    class="w-full pt-5 pb-4 px-5 rounded-2xl bg-transparent border-2 border-gray-200 focus:border-[#3f72af] outline-none text-gray-800 transition-all">
+            </div>
+
+            <button onclick="runEngine()" id="mainBtn" class="btn-avanti w-full py-4 rounded-2xl font-bold text-lg shadow-xl shadow-blue-100">
+                Activate Engine
             </button>
         </div>
 
-        <p class="mt-6 text-[10px] text-gray-400 font-medium">CLAYMORE SOLUTIONS | AVANTI OS</p>
+        <p class="mt-8 text-center text-[10px] text-gray-300 font-medium tracking-widest">CLAYMORE SOLUTIONS | SECURE API</p>
     </div>
 
     <script>
-        const btn = document.getElementById('main-btn');
+        const btn = document.getElementById('mainBtn');
         const statusText = document.getElementById('status-text');
-        const input = document.getElementById('push-message');
-        const iconBg = document.getElementById('icon-bg');
+        const statusDot = document.getElementById('status-dot');
+        const input = document.getElementById('pushInput');
 
-        // Initial UI State check
+        // Check permission state on load
         if (Notification.permission === "granted") {
-            setReadyUI();
+            setReady();
         }
 
-        async function handleEngine() {
-            const text = input.value.trim();
+        async function runEngine() {
+            const message = input.value.trim();
 
-            // 1. If permission isn't granted yet, we must ask first
+            // STEP 1: If we don't have permission, we must ask.
             if (Notification.permission !== "granted") {
                 const permission = await Notification.requestPermission();
                 if (permission === "granted") {
-                    setReadyUI();
-                    if (text) sendPush(text);
+                    setReady();
+                    if (message) sendAlert(message);
                 } else {
                     statusText.innerText = "Permission Denied";
-                    statusText.classList.replace('text-orange-500', 'text-red-500');
+                    statusDot.className = "status-dot bg-red-500";
                 }
                 return;
             }
 
-            // 2. If already granted, just send the message
-            if (text) {
-                sendPush(text);
+            // STEP 2: If we have permission, send the message
+            if (message) {
+                sendAlert(message);
             } else {
-                alert("Please type a message to dispatch.");
+                alert("Please enter a message to push.");
             }
         }
 
-        function sendPush(msg) {
-            new Notification("Avanti Intelligence", {
-                body: msg,
+        function sendAlert(text) {
+            new Notification("Claymore Alert", {
+                body: text,
                 icon: "https://via.placeholder.com/128/3f72af/ffffff?text=A",
                 badge: "https://via.placeholder.com/128/3f72af/ffffff?text=A",
-                silent: false
+                tag: 'avanti-push'
             });
-            input.value = ""; // Reset
+            input.value = ""; // Clear input
         }
 
-        function setReadyUI() {
+        function setReady() {
             statusText.innerText = "Engine Online";
-            statusText.classList.replace('text-orange-500', 'text-green-500');
-            btn.innerText = "Dispatch Notification";
-            btn.classList.remove('pulse');
-            iconBg.classList.replace('bg-[#3f72af]', 'bg-green-500');
+            statusDot.className = "status-dot bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]";
+            btn.innerText = "Dispatch Push";
         }
     </script>
 </body>
 </html>
-hi
+hello
